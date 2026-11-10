@@ -1,6 +1,4 @@
 /// All route paths in one place (lib/app_routes.dart). Add yours via PR.
-
-import 'package:flutter/material.dart';
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
@@ -13,9 +11,4 @@ class AppRoutes {
   static const progress = '/progress';
   static const review = '/review/:resultId';
   static const supportPlan = '/support-plan/:studentId';
-
-  static final Map<String, WidgetBuilder> routes = {
-    // login: (context) => const login(),
-    // register: (context) => const register(),
-  };  
 }
