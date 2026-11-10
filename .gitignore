@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+bootstrap_menya.sh
+# Append to .gitignore if missing. DO commit: pubspec.lock, firebase_options.dart
+# Do NOT commit: service account keys, .env
+*.env
+**/service-account*.json
