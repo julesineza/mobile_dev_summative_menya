@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_dev_summative_menya/screens/assessment/assessment_reading.dart';
 import '/screens/assessment/start_assessment.dart';
+import 'package:mobile_dev_summative_menya/screens/assessment/assessment_math.dart';
 
 class AppRoutes {
   static const login = '/login';
@@ -19,6 +20,7 @@ class AppRoutes {
 
   static final Map<String, WidgetBuilder> routes = {
     start_assessment: (context) => const StartAssessment(),
-    assessReading: (context) => const AssessmentReading()
+    assessReading: (context) => const AssessmentReading(),
+    assessMath: (context) => const AssessmentMath(),
   };
 }
