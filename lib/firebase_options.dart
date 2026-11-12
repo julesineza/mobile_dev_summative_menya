@@ -45,28 +45,27 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCbpMaZd3Tlj09sJqWOOEqduTss8W3eFI8',
-    appId: '1:879135523749:ios:486bef4d7b38efa072de4c',
-    messagingSenderId: '879135523749',
-    projectId: 'menya-summative',
-    authDomain: 'menya-summative.firebaseapp.com',
-    storageBucket: 'menya-summative.firebasestorage.app',
+    apiKey: Sting.fromEnvironment('apikey'),
+    appId: Sting.fromEnvironment('appId'),
+    messagingSenderId: Sting.fromEnvironment('messagingSenderId'),
+    projectId: Sting.fromEnvironment('projectId'),
+    authDomain: String.fromEnvironment('authDomain'),
+    storageBucket: String.fromEnvironment('storageBucket'),
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCibqAGPGk1Trn_Ac9tXga9Yi2CmbOW95M',
-    appId: '1:879135523749:android:1f845eded8a2a60f72de4c',
-    messagingSenderId: '879135523749',
-    projectId: 'menya-summative',
-    storageBucket: 'menya-summative.firebasestorage.app',
+    apiKey: Sting.fromEnvironment('apikey'),
+    appId: Sting.fromEnvironment('appId'),
+    messagingSenderId: Sting.fromEnvironment('messagingSenderId'),
+    projectId: Sting.fromEnvironment('projectId'),
+    storageBucket: String.fromnEnvironment('storageBucket'),
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCbpMaZd3Tlj09sJqWOOEqduTss8W3eFI8',
-    appId: '1:879135523749:ios:486bef4d7b38efa072de4c',
-    messagingSenderId: '879135523749',
-    projectId: 'menya-summative',
-    storageBucket: 'menya-summative.firebasestorage.app',
-    iosBundleId: 'com.example.mobileDevSummativeMenya',
+    apiKey: Sting.fromEnvironment('apikey'),
+    appId: Sting.fromEnvironment('appId'),
+    messagingSenderId: Sting.fromEnvironment('messagingSenderId'),
+    projectId: Sting.fromEnvironment('projectId'),
+    iosBundleId: String.fromEnvironment('iosBundleId'),
   );
 }
