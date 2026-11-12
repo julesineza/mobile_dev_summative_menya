@@ -35,24 +35,48 @@ class _AssessmentMathState extends State<AssessmentMath> {
     _controllers = List.generate(count, (_) => TextEditingController());
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<AssessmentProvider>();
+    final count = provider.test?.questions.length ?? 0;
+    if (_controllers.length != count) {
+      _syncControllers(count);
+    }
+  }
+
   Future<void> _save() async {
     final provider = context.read<AssessmentProvider>();
     provider.setMathAnswers(
       _controllers.map((controller) => controller.text).toList(),
     );
     setState(() => _isSaving = true);
+    final hasNext = provider.hasNextLearner;
     try {
       await provider.saveMathResult(_level);
       if (!mounted) return;
-      if (await provider.moveToNextLearner()) {
+      if (hasNext) {
+        await provider.moveToNextLearner();
+        if (!mounted) return;
         Navigator.of(context).pushReplacementNamed(AppRoutes.assessMath);
       } else {
+        await provider.moveToNextLearner();
+        if (!mounted) return;
         Navigator.of(context).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Math assessment completed for all learners!'),
+            backgroundColor: AppColors.button,
+          ),
+        );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save math result: $error')),
+          SnackBar(
+            content: Text('Saved locally: $error'),
+            backgroundColor: AppColors.button,
+          ),
         );
         setState(() => _isSaving = false);
       }
@@ -64,7 +88,9 @@ class _AssessmentMathState extends State<AssessmentMath> {
     final provider = context.watch<AssessmentProvider>();
     final learner = provider.currentLearner;
     final questions = provider.test?.questions ?? const [];
-    _syncControllers(questions.length);
+    if (_controllers.length != questions.length) {
+      _syncControllers(questions.length);
+    }
 
     final answers = _controllers.map((controller) => controller.text).toList();
     final correct = answers

@@ -305,7 +305,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
 
                     if (!mounted) return;
                     final route = provider.selectedChoice == UserChoice.reading
-                        ? AppRoutes.takeReading
+                        ? AppRoutes.prepareReading
                         : AppRoutes.assessMath;
                     Navigator.of(context).pushNamed(route);
                   },

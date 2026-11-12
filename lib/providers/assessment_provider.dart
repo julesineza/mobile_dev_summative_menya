@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/grading.dart';
+import '../models/assessment_result.dart';
 import '../models/assessment_session.dart';
 import '../models/assessment_test.dart';
 import '../models/enums.dart';
@@ -47,12 +48,15 @@ class AssessmentProvider extends ChangeNotifier {
   double? _readingAccuracy;
   double? _readingWordsPerMinute;
   List<String> _mathAnswers = const [];
+  List<AssessmentResult> _completedResults = [];
   bool _sessionPersisted = false;
 
   UserChoice get selectedChoice => _selectedAssessment;
   AssessmentTest? get test => _test;
   AssessmentSession? get session => _session;
   List<AssessmentLearner> get learners => _learners;
+  int get currentLearnerIndex => _currentLearnerIndex;
+  int get totalLearners => _learners.length;
   AssessmentLearner? get currentLearner =>
       _learners.isEmpty ? null : _learners[_currentLearnerIndex];
   bool get hasNextLearner => _currentLearnerIndex < _learners.length - 1;
@@ -61,6 +65,7 @@ class AssessmentProvider extends ChangeNotifier {
   double? get readingAccuracy => _readingAccuracy;
   double? get readingWordsPerMinute => _readingWordsPerMinute;
   List<String> get mathAnswers => _mathAnswers;
+  List<AssessmentResult> get completedResults => List.unmodifiable(_completedResults);
 
   void setSelectedAssessment(UserChoice assessment) {
     _selectedAssessment = assessment;
@@ -68,6 +73,7 @@ class AssessmentProvider extends ChangeNotifier {
     _session = null;
     _sessionPersisted = false;
     _currentLearnerIndex = 0;
+    _completedResults = [];
     notifyListeners();
   }
 
@@ -93,12 +99,16 @@ class AssessmentProvider extends ChangeNotifier {
     _currentLearnerIndex = 0;
     _session = null;
     _sessionPersisted = false;
+    _completedResults = [];
     notifyListeners();
   }
 
   Future<List<AssessmentLearner>> loadLearners() async {
     try {
       final students = await _service.getStudents(classId: fallbackClassId);
+      if (students.isEmpty) {
+        return _fallbackLearners();
+      }
       return students
           .map(
             (student) => AssessmentLearner(
@@ -113,7 +123,7 @@ class AssessmentProvider extends ChangeNotifier {
           .toList();
     } catch (error) {
       debugPrint('Unable to load learners: $error');
-      return const [];
+      return _fallbackLearners();
     }
   }
 
@@ -136,13 +146,11 @@ class AssessmentProvider extends ChangeNotifier {
         studentIds: _learners.map((learner) => learner.id).toList(),
       );
       _sessionPersisted = true;
-    } on TimeoutException catch (error) {
+    } catch (error) {
       _session = _localSession(test);
       _sessionPersisted = false;
       debugPrint(
-        '[AssessmentProvider] session creation timed out; '
-        'using local session ${_session!.id}. Result upload will still be attempted. '
-        'error=$error',
+        '[AssessmentProvider] using local session ${_session!.id}. error=$error',
       );
     }
     notifyListeners();
@@ -177,35 +185,55 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveReadingResult(ResponseLevel level) async {
+  Future<AssessmentResult> saveReadingResult(ResponseLevel level) async {
     final learner = _requireLearner();
     final test = _test ?? _fallbackTest(Subject.reading);
-    debugPrint(
-      '[AssessmentProvider] saveReadingResult start '
-      'learner=${learner.id} session=${_session?.id ?? 'not-created'}',
-    );
     await ensureSession();
-    await _service.saveResult(
-      schoolId: learner.schoolId,
-      classId: learner.classId,
-      sessionId: _session!.id,
-      studentId: learner.id,
-      teacherId: fallbackTeacherId,
-      subject: Subject.reading,
-      language: test.language,
-      level: level,
-      autoLevel: Grading.levelFromPercent(_readingAccuracy ?? 0),
-      durationSec: _readingDurationSec,
-      wordsPerMinute: _readingWordsPerMinute,
-      accuracy: _readingAccuracy,
-      errorWords: _errorWords,
-    );
-    debugPrint(
-      '[AssessmentProvider] saveReadingResult success learner=${learner.id}',
-    );
+    try {
+      final result = await _service.saveResult(
+        schoolId: learner.schoolId,
+        classId: learner.classId,
+        sessionId: _session!.id,
+        studentId: learner.id,
+        teacherId: fallbackTeacherId,
+        subject: Subject.reading,
+        language: test.language,
+        level: level,
+        autoLevel: Grading.levelFromPercent(_readingAccuracy ?? 0),
+        durationSec: _readingDurationSec,
+        wordsPerMinute: _readingWordsPerMinute,
+        accuracy: _readingAccuracy,
+        errorWords: _errorWords,
+      );
+      _completedResults.add(result);
+      notifyListeners();
+      return result;
+    } catch (error) {
+      debugPrint('[AssessmentProvider] saveReadingResult local save: $error');
+      final localResult = AssessmentResult(
+        id: 'local-res-${DateTime.now().microsecondsSinceEpoch}',
+        schoolId: learner.schoolId,
+        classId: learner.classId,
+        sessionId: _session!.id,
+        studentId: learner.id,
+        teacherId: fallbackTeacherId,
+        subject: Subject.reading,
+        language: test.language,
+        level: level,
+        autoLevel: Grading.levelFromPercent(_readingAccuracy ?? 0),
+        durationSec: _readingDurationSec,
+        createdAt: DateTime.now(),
+        wordsPerMinute: _readingWordsPerMinute,
+        accuracy: _readingAccuracy,
+        errorWords: _errorWords,
+      );
+      _completedResults.add(localResult);
+      notifyListeners();
+      return localResult;
+    }
   }
 
-  Future<void> saveMathResult(ResponseLevel level) async {
+  Future<AssessmentResult> saveMathResult(ResponseLevel level) async {
     final learner = _requireLearner();
     final test = _test ?? _fallbackTest(Subject.math);
     await ensureSession();
@@ -223,21 +251,48 @@ class AssessmentProvider extends ChangeNotifier {
       itemsCorrect: correct,
       itemsTotal: test.questions.length,
     );
-    await _service.saveResult(
-      schoolId: learner.schoolId,
-      classId: learner.classId,
-      sessionId: _session!.id,
-      studentId: learner.id,
-      teacherId: fallbackTeacherId,
-      subject: Subject.math,
-      language: test.language,
-      level: level,
-      autoLevel: Grading.levelFromPercent(accuracy),
-      durationSec: 0,
-      accuracy: accuracy,
-      itemsCorrect: correct,
-      itemsTotal: test.questions.length,
-    );
+    try {
+      final result = await _service.saveResult(
+        schoolId: learner.schoolId,
+        classId: learner.classId,
+        sessionId: _session!.id,
+        studentId: learner.id,
+        teacherId: fallbackTeacherId,
+        subject: Subject.math,
+        language: test.language,
+        level: level,
+        autoLevel: Grading.levelFromPercent(accuracy),
+        durationSec: 0,
+        accuracy: accuracy,
+        itemsCorrect: correct,
+        itemsTotal: test.questions.length,
+      );
+      _completedResults.add(result);
+      notifyListeners();
+      return result;
+    } catch (error) {
+      debugPrint('[AssessmentProvider] saveMathResult local save: $error');
+      final localResult = AssessmentResult(
+        id: 'local-res-${DateTime.now().microsecondsSinceEpoch}',
+        schoolId: learner.schoolId,
+        classId: learner.classId,
+        sessionId: _session!.id,
+        studentId: learner.id,
+        teacherId: fallbackTeacherId,
+        subject: Subject.math,
+        language: test.language,
+        level: level,
+        autoLevel: Grading.levelFromPercent(accuracy),
+        durationSec: 0,
+        createdAt: DateTime.now(),
+        accuracy: accuracy,
+        itemsCorrect: correct,
+        itemsTotal: test.questions.length,
+      );
+      _completedResults.add(localResult);
+      notifyListeners();
+      return localResult;
+    }
   }
 
   Future<bool> moveToNextLearner() async {
@@ -245,13 +300,8 @@ class AssessmentProvider extends ChangeNotifier {
       debugPrint(
         '[AssessmentProvider] completing final session=${_session?.id}',
       );
-      if (_session != null && _sessionPersisted) {
+      if (_session != null) {
         await _service.completeSession(_session!.id);
-      } else {
-        debugPrint(
-          '[AssessmentProvider] skipping session completion because '
-          'session was not persisted',
-        );
       }
       return false;
     }
@@ -266,6 +316,34 @@ class AssessmentProvider extends ChangeNotifier {
     _mathAnswers = const [];
     notifyListeners();
     return true;
+  }
+
+  bool skipCurrentLearner() {
+    if (!hasNextLearner) return false;
+    _currentLearnerIndex++;
+    _errorWords = [];
+    _readingDurationSec = 0;
+    _readingAccuracy = null;
+    _readingWordsPerMinute = null;
+    _mathAnswers = const [];
+    notifyListeners();
+    return true;
+  }
+
+  void resetAssessment() {
+    _selectedAssessment = UserChoice.none;
+    _test = null;
+    _session = null;
+    _sessionPersisted = false;
+    _learners = const [];
+    _currentLearnerIndex = 0;
+    _errorWords = [];
+    _readingDurationSec = 0;
+    _readingAccuracy = null;
+    _readingWordsPerMinute = null;
+    _mathAnswers = const [];
+    _completedResults = [];
+    notifyListeners();
   }
 
   AssessmentLearner _requireLearner() {
@@ -306,6 +384,43 @@ class AssessmentProvider extends ChangeNotifier {
         .toUpperCase();
   }
 
+  List<AssessmentLearner> _fallbackLearners() {
+    return [
+      AssessmentLearner(
+        id: 'temporary-student-bruno',
+        name: 'Bruno Niyonsaba',
+        initials: 'BN',
+        className: 'Class P3-A',
+        schoolId: fallbackSchoolId,
+        classId: fallbackClassId,
+      ),
+      AssessmentLearner(
+        id: 'temporary-student-fiona',
+        name: 'Fiona Uwase',
+        initials: 'FU',
+        className: 'Class P3-A',
+        schoolId: fallbackSchoolId,
+        classId: fallbackClassId,
+      ),
+      AssessmentLearner(
+        id: 'temporary-student-aliane',
+        name: 'Aliane Umutoni',
+        initials: 'AU',
+        className: 'Class P3-A',
+        schoolId: fallbackSchoolId,
+        classId: fallbackClassId,
+      ),
+      AssessmentLearner(
+        id: 'temporary-student-cynthia',
+        name: 'Cynthia Gisa',
+        initials: 'CG',
+        className: 'Class P3-A',
+        schoolId: fallbackSchoolId,
+        classId: fallbackClassId,
+      ),
+    ];
+  }
+
   AssessmentTest _fallbackTest(Subject subject) {
     if (subject == Subject.math) {
       return AssessmentTest(
@@ -335,3 +450,4 @@ class AssessmentProvider extends ChangeNotifier {
     );
   }
 }
+

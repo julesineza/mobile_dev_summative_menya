@@ -44,28 +44,47 @@ class StartAssessment extends StatelessWidget {
               const SizedBox(height: 27),
 
               // Description
-              RichText(
-                text: TextSpan(
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
-                    height: 1.3,
-                  ),
-                  children: [
-                    const TextSpan(
-                      text:
-                          'Select a subject to begin a quick check. '
-                          'Class ',
-                    ),
-                    TextSpan(
-                      text: 'P3\n- A',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 15,
+                          height: 1.3,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: 'Select a subject to begin a quick check. Class ',
+                          ),
+                          TextSpan(
+                            text: 'P3-A',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const TextSpan(text: ' is active.'),
+                        ],
                       ),
                     ),
-                    const TextSpan(text: ' is currently active.'),
-                  ],
-                ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(AppRoutes.selectClass);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.button,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text(
+                      'Change',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 23),
