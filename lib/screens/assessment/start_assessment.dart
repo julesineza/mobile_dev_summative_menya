@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_dev_summative_menya/app_routes.dart';
+import 'package:mobile_dev_summative_menya/providers/assessment_provider.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/constants/colors.dart';
 
@@ -76,7 +78,10 @@ class StartAssessment extends StatelessWidget {
                 color: colorScheme.primary,
                 iconBackground: const Color(0xFFEAF4EC),
                 onTap: () {
-                  Navigator.of(context).pushNamed(AppRoutes.assessReading);
+                  context.read<AssessmentProvider>().setSelectedAssessment(
+                        UserChoice.reading,
+                      );
+                  Navigator.of(context).pushNamed(AppRoutes.selectLearners);
                 },
               ),
 
@@ -90,7 +95,10 @@ class StartAssessment extends StatelessWidget {
                 color: const Color(0xFFFF6500),
                 iconBackground: const Color(0xFFFFF1E7),
                 onTap: () {
-                  debugPrint('Mathematics selected');
+                  context.read<AssessmentProvider>().setSelectedAssessment(
+                        UserChoice.math,
+                      );
+                  Navigator.of(context).pushNamed(AppRoutes.selectLearners);
                 },
               ),
             ],

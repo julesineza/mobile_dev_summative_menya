@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "879135523749",
+    "project_id": "menya-summative",
+    "storage_bucket": "menya-summative.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:879135523749:android:1f845eded8a2a60f72de4c",
+        "android_client_info": {
+          "package_name": "com.example.mobile_dev_summative_menya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCibqAGPGk1Trn_Ac9tXga9Yi2CmbOW95M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
