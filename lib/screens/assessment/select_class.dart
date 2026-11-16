@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../providers/assessment_provider.dart';
 
 class Grade {
   final String level;
@@ -24,35 +26,48 @@ class SelectClassesPage extends StatefulWidget {
 
 class _SelectClassesPageState extends State<SelectClassesPage> {
   final List<Grade> classes = [
-    Grade(level: 'P1 A', classSize: '50'),
-    Grade(level: 'P1 B', classSize: '40'),
-    Grade(level: 'P2 A', classSize: '40'),
-    Grade(level: 'P2 B', classSize: '56'),
+    Grade(level: 'P1-A', classSize: '50'),
+    Grade(level: 'P1-B', classSize: '40'),
+    Grade(level: 'P2-A', classSize: '40'),
+    Grade(level: 'P2-B', classSize: '56'),
+    Grade(level: 'P3-A', classSize: '45'),
+    Grade(level: 'P3-B', classSize: '42'),
   ];
 
-  int get selectedCount => classes.where((e) => e.isSelected).length;
-  bool get allSelected => classes.isNotEmpty && selectedCount == classes.length;
-
-  void toggleAll() {
-    setState(() {
-      final newValue = !allSelected;
-      for (var c in classes) {
-        c.isSelected = newValue;
-      }
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final current = context.read<AssessmentProvider>().selectedClassName;
+      setState(() {
+        for (var c in classes) {
+          c.isSelected = (c.level == current ||
+              c.level.replaceAll('-', ' ') == current ||
+              c.level == current.replaceAll(' ', '-'));
+        }
+        if (!classes.any((c) => c.isSelected)) {
+          classes
+              .firstWhere((c) => c.level == 'P3-A', orElse: () => classes.first)
+              .isSelected = true;
+        }
+      });
     });
   }
+
+  Grade? get selectedGrade =>
+      classes.where((e) => e.isSelected).firstOrNull;
 
   @override
   Widget build(BuildContext context) {
     const green = AppColors.button;
-    const lightGreen = Color(0xFFD9EADF);
+    const lightGreen = AppColors.primarySoft;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Header Top Bar
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
@@ -75,12 +90,12 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                     ),
                   ),
                   const Text(
-                    '1 OF 6',
+                    'CHANGE CLASS',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: Colors.black54,
-                      letterSpacing: 0.5,
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ],
@@ -89,7 +104,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
                   const Text(
                     'Select Class',
@@ -97,12 +112,13 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
+                      color: AppColors.text,
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 8),
                   const Text(
-                    'Choose a class for this session.',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                    'Choose the active class to assess or configure tests for.',
+                    style: TextStyle(fontSize: 15, color: AppColors.secondaryText),
                   ),
                   const SizedBox(height: 20),
 
@@ -111,59 +127,62 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${classes.length} CLASSES',
+                        '${classes.length} AVAILABLE CLASSES',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black54,
+                          color: AppColors.secondaryText,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: toggleAll,
-                        child: Text(
-                          allSelected ? 'Deselect all' : 'Select all',
+                      if (selectedGrade != null)
+                        Text(
+                          'Selected: ${selectedGrade!.level}',
                           style: const TextStyle(
-                            color: green,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                            color: green,
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
 
                   // Class cards
                   ...classes.map((grade) {
+                    final isSelected = grade.isSelected;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: GestureDetector(
                         onTap: () {
-                          setState(() => grade.isSelected = !grade.isSelected);
+                          setState(() {
+                            for (var c in classes) {
+                              c.isSelected = (c == grade);
+                            }
+                          });
                         },
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: grade.isSelected
-                                  ? green
-                                  : const Color(0xFFE8DDC8),
-                              width: grade.isSelected ? 1.5 : 1,
+                              color: isSelected ? green : AppColors.border,
+                              width: isSelected ? 1.8 : 1,
                             ),
                           ),
                           child: Row(
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundColor: lightGreen,
+                                backgroundColor: isSelected ? green : lightGreen,
                                 child: Text(
-                                  grade.level, // FIXED: was Grade.level
-                                  style: const TextStyle(
-                                    color: green,
+                                  grade.level,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : green,
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 14,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ),
@@ -173,44 +192,41 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Class ${grade.level}', // FIXED: was learner.name
+                                      'Class ${grade.level}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 16,
+                                        color: AppColors.text,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${grade.classSize} learners', // FIXED: was learner.className
+                                      '${grade.classSize} registered learners',
                                       style: const TextStyle(
-                                        color: Colors.black54,
-                                        fontSize: 14,
+                                        color: AppColors.secondaryText,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              // Custom checkbox
+                              // Radio-style selection circle
                               Container(
-                                width: 26,
-                                height: 26,
+                                width: 24,
+                                height: 24,
                                 decoration: BoxDecoration(
-                                  color: grade.isSelected
-                                      ? green
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(7),
+                                  shape: BoxShape.circle,
+                                  color: isSelected ? green : Colors.transparent,
                                   border: Border.all(
-                                    color: grade.isSelected
-                                        ? green
-                                        : Colors.grey.shade400,
-                                    width: 1.5,
+                                    color: isSelected ? green : Colors.grey.shade400,
+                                    width: 1.8,
                                   ),
                                 ),
-                                child: grade.isSelected
+                                child: isSelected
                                     ? const Icon(
                                         Icons.check,
                                         color: Colors.white,
-                                        size: 18,
+                                        size: 16,
                                       )
                                     : null,
                               ),
@@ -221,14 +237,14 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                     );
                   }),
 
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 20),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      'You can select multiple classes or just one for this session.',
+                      'Selecting a class sets it active for quick checks, math tests, and reading sessions.',
                       style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54,
+                        fontSize: 13,
+                        color: AppColors.secondaryText,
                         height: 1.4,
                       ),
                     ),
@@ -237,7 +253,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
               ),
             ),
 
-            // Bottom button
+            // Bottom Confirm Button
             Container(
               color: Colors.white,
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -245,14 +261,32 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: selectedCount == 0
+                  onPressed: selectedGrade == null
                       ? null
                       : () {
-                          final selected = classes
-                              .where((e) => e.isSelected)
-                              .toList();
-                          Navigator.of(context)
-                              .pushNamed(AppRoutes.selectLearners);
+                          final selected = selectedGrade!;
+                          final formattedName = selected.level.replaceAll(' ', '-');
+                          context.read<AssessmentProvider>().setSelectedClass(
+                                name: formattedName,
+                                id: 'class-${formattedName.toLowerCase()}',
+                              );
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Active class changed to $formattedName'),
+                              backgroundColor: AppColors.button,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+
+                          // Redirect to Choose Assessment page (StartAssessment)
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          } else {
+                            Navigator.of(context).pushReplacementNamed(
+                              AppRoutes.start_assessment,
+                            );
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
@@ -263,9 +297,9 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                     elevation: 0,
                   ),
                   child: Text(
-                    selectedCount == 0
-                        ? 'Select a class to continue'
-                        : 'Continue with $selectedCount ${selectedCount == 1 ? 'class' : 'classes'}',
+                    selectedGrade == null
+                        ? 'Select a class'
+                        : 'Set ${selectedGrade!.level} as active class',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

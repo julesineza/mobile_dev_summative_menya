@@ -26,10 +26,10 @@ void main() {
 
     test('Assigns correct response levels based on cutoffs', () {
       expect(Grading.levelFromPercent(95.0), ResponseLevel.proficient);
-      expect(Grading.levelFromPercent(90.0), ResponseLevel.proficient);
-      expect(Grading.levelFromPercent(89.9), ResponseLevel.developing);
-      expect(Grading.levelFromPercent(70.0), ResponseLevel.developing);
-      expect(Grading.levelFromPercent(69.9), ResponseLevel.struggling);
+      expect(Grading.levelFromPercent(85.0), ResponseLevel.proficient);
+      expect(Grading.levelFromPercent(84.9), ResponseLevel.developing);
+      expect(Grading.levelFromPercent(60.0), ResponseLevel.developing);
+      expect(Grading.levelFromPercent(59.9), ResponseLevel.struggling);
       expect(Grading.levelFromPercent(30.0), ResponseLevel.struggling);
     });
   });
@@ -193,6 +193,107 @@ void main() {
 
       // Finish or next student button is present
       expect(find.textContaining('learner'), findsWidgets);
+    });
+
+    testWidgets('Set up custom test flows for Reading and Math', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final provider = AssessmentProvider();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AssessmentProvider>.value(
+          value: provider,
+          child: MaterialApp(
+            initialRoute: AppRoutes.start_assessment,
+            routes: AppRoutes.routes,
+          ),
+        ),
+      );
+
+      // Verify custom test setup card is visible on StartAssessment
+      expect(find.text('Set up a custom test'), findsOneWidget);
+      await tester.tap(find.text('Set up'));
+      await tester.pumpAndSettle();
+
+      // Verify on Reading setup page
+      expect(find.text('Set up a test'), findsOneWidget);
+      expect(find.text('Soma · Reading'), findsOneWidget);
+      expect(find.text('Imibare · Math'), findsOneWidget);
+      expect(find.text('Reading content'), findsOneWidget);
+
+      // Switch to Math setup page
+      await tester.tap(find.text('Imibare · Math'));
+      await tester.pumpAndSettle();
+
+      // Verify on Math setup page
+      expect(find.text('Math questions'), findsOneWidget);
+      expect(find.text('Add question'), findsOneWidget);
+
+      // Add a question
+      await tester.tap(find.text('Add question'));
+      await tester.pump();
+      expect(find.text('4 questions'), findsOneWidget);
+
+      // Switch back to Reading setup page
+      await tester.tap(find.text('Soma · Reading'));
+      await tester.pumpAndSettle();
+      expect(find.text('Reading content'), findsOneWidget);
+    });
+
+    testWidgets('Change class flow redirects back to choose assessment page',
+        (WidgetTester tester) async {
+      final provider = AssessmentProvider();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AssessmentProvider>.value(
+          value: provider,
+          child: MaterialApp(
+            initialRoute: AppRoutes.start_assessment,
+            routes: AppRoutes.routes,
+          ),
+        ),
+      );
+
+      // Initially active class is P3-A
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains('P3-A'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Change'), findsOneWidget);
+
+      // Tap Change class
+      await tester.tap(find.text('Change'));
+      await tester.pumpAndSettle();
+
+      // Verify on Select Class page
+      expect(find.text('Select Class'), findsOneWidget);
+      expect(find.text('Class P1-B'), findsOneWidget);
+
+      // Select P1-B
+      await tester.tap(find.text('Class P1-B'));
+      await tester.pumpAndSettle();
+
+      // Tap confirm button
+      await tester.tap(find.text('Set P1-B as active class'));
+      await tester.pumpAndSettle();
+
+      // Verify redirected back to StartAssessment (Choose assessment page)
+      expect(find.text('New Assessment'), findsOneWidget);
+      expect(provider.selectedClassName, 'P1-B');
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is RichText &&
+              w.text.toPlainText().contains('Class P1-B is active'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Soma (Reading)'), findsOneWidget);
+      expect(find.text('Imibare (Mathematics)'), findsOneWidget);
     });
   });
 }

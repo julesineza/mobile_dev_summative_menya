@@ -10,18 +10,23 @@ import 'providers/app_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Object? startupError;
+  Object? startupWarning;
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
+      await FirebaseAuth.instance
+          .signInAnonymously()
+          .timeout(const Duration(seconds: 4));
     }
   } catch (error) {
-    startupError = error;
+    debugPrint('[Firebase Startup Warning]: $error');
+    startupWarning = error;
   }
-  runApp(MyApp(startupError: startupError));
+
+  runApp(MyApp(startupError: startupWarning));
 }
 
 class MyApp extends StatelessWidget {
@@ -31,13 +36,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (startupError != null) {
-      return MaterialApp(
-        title: 'Menya',
-        theme: AppTheme.light,
-        home: StartupErrorPage(error: startupError!),
-      );
-    }
     return MultiProvider(
       providers: appProviders,
       child: MaterialApp(
@@ -71,16 +69,21 @@ class StartupErrorPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Firebase could not start',
+                'Firebase Notice',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text('$error', textAlign: TextAlign.center),
               const SizedBox(height: 20),
-              const Text(
-                'Enable Anonymous sign-in in Firebase Console, then restart the app.',
-                textAlign: TextAlign.center,
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pushReplacementNamed(
+                    AppRoutes.start_assessment,
+                  );
+                },
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('Continue to App (Offline Mode)'),
               ),
             ],
           ),

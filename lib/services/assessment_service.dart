@@ -52,6 +52,81 @@ class AssessmentService {
     }
   }
 
+  Future<AssessmentTest> createTest({
+    required String schoolId,
+    required String createdBy,
+    required String title,
+    required Subject subject,
+    required int grade,
+    Language language = Language.english,
+    String? passageText,
+    List<TestQuestion> questions = const [],
+  }) async {
+    final effectiveTeacherId = _resolveTeacherId(createdBy);
+    final firestore = _firestore;
+    final testId = firestore != null
+        ? firestore.collection(FirestorePaths.tests).doc().id
+        : 'test-${DateTime.now().microsecondsSinceEpoch}';
+
+    debugPrint('[AssessmentService] createTest start id=$testId title=$title');
+    final test = AssessmentTest(
+      id: testId,
+      schoolId: schoolId,
+      createdBy: effectiveTeacherId,
+      title: title,
+      subject: subject,
+      grade: grade,
+      createdAt: DateTime.now(),
+      language: language,
+      passageText: passageText,
+      questions: questions,
+    );
+
+    if (firestore != null) {
+      try {
+        await firestore
+            .collection(FirestorePaths.tests)
+            .doc(testId)
+            .set(test.toMap())
+            .timeout(const Duration(seconds: 5));
+        debugPrint('[AssessmentService] createTest success id=$testId');
+      } catch (error) {
+        debugPrint(
+          '[AssessmentService] createTest Firestore write deferred/offline ($error), saved locally: ${test.id}',
+        );
+      }
+    }
+    return test;
+  }
+
+  Future<List<AssessmentTest>> getTests({
+    required String schoolId,
+    Subject? subject,
+    int? grade,
+  }) async {
+    final firestore = _firestore;
+    if (firestore == null) return const [];
+
+    try {
+      Query<Map<String, dynamic>> query = firestore
+          .collection(FirestorePaths.tests)
+          .where('schoolId', isEqualTo: schoolId);
+
+      if (subject != null) {
+        query = query.where('subject', isEqualTo: subject.name);
+      }
+      if (grade != null) {
+        query = query.where('grade', isEqualTo: grade);
+      }
+
+      final snapshot = await query.get().timeout(const Duration(seconds: 4));
+      return snapshot.docs.map(AssessmentTest.fromFirestore).toList();
+    } catch (e) {
+      debugPrint('[AssessmentService] getTests error/timeout ($e)');
+      return const [];
+    }
+  }
+
   Future<List<Student>> getStudents({required String classId}) async {
     final firestore = _firestore;
     if (firestore == null) return const [];

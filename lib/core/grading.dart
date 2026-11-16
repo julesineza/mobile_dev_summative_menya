@@ -3,8 +3,8 @@ import '../models/enums.dart';
 /// Automatic grading. The teacher still makes the final 1-2-3 choice.
 /// !! The cutoffs below are PLACEHOLDERS. Replace with the REB/LEGRA benchmarks for each grade.
 class Grading {
-  static const double proficientCutoff = 90; // percent
-  static const double developingCutoff = 70; // percent
+  static const double proficientCutoff = 85; // percent
+  static const double developingCutoff = 60; // percent
 
   static ResponseLevel levelFromPercent(double percent) {
     if (percent >= proficientCutoff) return ResponseLevel.proficient;

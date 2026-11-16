@@ -39,6 +39,8 @@ class AssessmentProvider extends ChangeNotifier {
 
   final AssessmentService _service;
   UserChoice _selectedAssessment = UserChoice.none;
+  String _selectedClassName = 'P3-A';
+  String _selectedClassId = fallbackClassId;
   AssessmentTest? _test;
   AssessmentSession? _session;
   List<AssessmentLearner> _learners = const [];
@@ -52,6 +54,8 @@ class AssessmentProvider extends ChangeNotifier {
   bool _sessionPersisted = false;
 
   UserChoice get selectedChoice => _selectedAssessment;
+  String get selectedClassName => _selectedClassName;
+  String get selectedClassId => _selectedClassId;
   AssessmentTest? get test => _test;
   AssessmentSession? get session => _session;
   List<AssessmentLearner> get learners => _learners;
@@ -78,6 +82,10 @@ class AssessmentProvider extends ChangeNotifier {
   }
 
   Future<void> prepareAssessment() async {
+    if (_test != null) {
+      notifyListeners();
+      return;
+    }
     final subject = _selectedAssessment == UserChoice.math
         ? Subject.math
         : Subject.reading;
@@ -94,6 +102,54 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<AssessmentTest> saveCustomTest({
+    required String title,
+    required Subject subject,
+    required int grade,
+    Language language = Language.english,
+    String? passageText,
+    List<TestQuestion> questions = const [],
+    String schoolId = fallbackSchoolId,
+  }) async {
+    final test = await _service.createTest(
+      schoolId: schoolId,
+      createdBy: fallbackTeacherId,
+      title: title,
+      subject: subject,
+      grade: grade,
+      language: language,
+      passageText: passageText,
+      questions: questions,
+    );
+    _test = test;
+    if (subject == Subject.reading) {
+      _selectedAssessment = UserChoice.reading;
+    } else if (subject == Subject.math) {
+      _selectedAssessment = UserChoice.math;
+    }
+    notifyListeners();
+    return test;
+  }
+
+  void setCustomTest(AssessmentTest test) {
+    _test = test;
+    if (test.subject == Subject.reading) {
+      _selectedAssessment = UserChoice.reading;
+    } else if (test.subject == Subject.math) {
+      _selectedAssessment = UserChoice.math;
+    }
+    notifyListeners();
+  }
+
+  void setSelectedClass({required String name, required String id}) {
+    _selectedClassName = name;
+    _selectedClassId = id;
+    _learners = const [];
+    _currentLearnerIndex = 0;
+    _session = null;
+    notifyListeners();
+  }
+
   void setLearners(List<AssessmentLearner> learners) {
     _learners = List.unmodifiable(learners);
     _currentLearnerIndex = 0;
@@ -105,7 +161,7 @@ class AssessmentProvider extends ChangeNotifier {
 
   Future<List<AssessmentLearner>> loadLearners() async {
     try {
-      final students = await _service.getStudents(classId: fallbackClassId);
+      final students = await _service.getStudents(classId: _selectedClassId);
       if (students.isEmpty) {
         return _fallbackLearners();
       }
@@ -115,7 +171,7 @@ class AssessmentProvider extends ChangeNotifier {
               id: student.id,
               name: student.name,
               initials: _initials(student.name),
-              className: 'Class P3-A',
+              className: 'Class $_selectedClassName',
               schoolId: student.schoolId,
               classId: student.classId,
             ),
@@ -390,33 +446,33 @@ class AssessmentProvider extends ChangeNotifier {
         id: 'temporary-student-bruno',
         name: 'Bruno Niyonsaba',
         initials: 'BN',
-        className: 'Class P3-A',
+        className: 'Class $_selectedClassName',
         schoolId: fallbackSchoolId,
-        classId: fallbackClassId,
+        classId: _selectedClassId,
       ),
       AssessmentLearner(
         id: 'temporary-student-fiona',
         name: 'Fiona Uwase',
         initials: 'FU',
-        className: 'Class P3-A',
+        className: 'Class $_selectedClassName',
         schoolId: fallbackSchoolId,
-        classId: fallbackClassId,
+        classId: _selectedClassId,
       ),
       AssessmentLearner(
         id: 'temporary-student-aliane',
         name: 'Aliane Umutoni',
         initials: 'AU',
-        className: 'Class P3-A',
+        className: 'Class $_selectedClassName',
         schoolId: fallbackSchoolId,
-        classId: fallbackClassId,
+        classId: _selectedClassId,
       ),
       AssessmentLearner(
         id: 'temporary-student-cynthia',
         name: 'Cynthia Gisa',
         initials: 'CG',
-        className: 'Class P3-A',
+        className: 'Class $_selectedClassName',
         schoolId: fallbackSchoolId,
-        classId: fallbackClassId,
+        classId: _selectedClassId,
       ),
     ];
   }

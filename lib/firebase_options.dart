@@ -6,12 +6,6 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// // ...
-
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -23,49 +17,90 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return web;
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return web;
       default:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
-        );
+        return android;
     }
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: Sting.fromEnvironment('apikey'),
-    appId: Sting.fromEnvironment('appId'),
-    messagingSenderId: Sting.fromEnvironment('messagingSenderId'),
-    projectId: Sting.fromEnvironment('projectId'),
-    authDomain: String.fromEnvironment('authDomain'),
-    storageBucket: String.fromEnvironment('storageBucket'),
+    apiKey: String.fromEnvironment(
+      'apiKey',
+      defaultValue: 'AIzaSyCbpMaZd3Tlj09sJqWOOEqduTss8W3eFI8',
+    ),
+    appId: String.fromEnvironment(
+      'appId',
+      defaultValue: '1:879135523749:ios:486bef4d7b38efa072de4c',
+    ),
+    messagingSenderId: String.fromEnvironment(
+      'messagingSenderId',
+      defaultValue: '879135523749',
+    ),
+    projectId: String.fromEnvironment(
+      'projectId',
+      defaultValue: 'menya-summative',
+    ),
+    authDomain: String.fromEnvironment(
+      'authDomain',
+      defaultValue: 'menya-summative.firebaseapp.com',
+    ),
+    storageBucket: String.fromEnvironment(
+      'storageBucket',
+      defaultValue: 'menya-summative.firebasestorage.app',
+    ),
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: Sting.fromEnvironment('apikey'),
-    appId: Sting.fromEnvironment('appId'),
-    messagingSenderId: Sting.fromEnvironment('messagingSenderId'),
-    projectId: Sting.fromEnvironment('projectId'),
-    storageBucket: String.fromnEnvironment('storageBucket'),
+    apiKey: String.fromEnvironment(
+      'apiKey',
+      defaultValue: 'AIzaSyCibqAGPGk1Trn_Ac9tXga9Yi2CmbOW95M',
+    ),
+    appId: String.fromEnvironment(
+      'appId',
+      defaultValue: '1:879135523749:android:1f845eded8a2a60f72de4c',
+    ),
+    messagingSenderId: String.fromEnvironment(
+      'messagingSenderId',
+      defaultValue: '879135523749',
+    ),
+    projectId: String.fromEnvironment(
+      'projectId',
+      defaultValue: 'menya-summative',
+    ),
+    storageBucket: String.fromEnvironment(
+      'storageBucket',
+      defaultValue: 'menya-summative.firebasestorage.app',
+    ),
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: Sting.fromEnvironment('apikey'),
-    appId: Sting.fromEnvironment('appId'),
-    messagingSenderId: Sting.fromEnvironment('messagingSenderId'),
-    projectId: Sting.fromEnvironment('projectId'),
-    iosBundleId: String.fromEnvironment('iosBundleId'),
+    apiKey: String.fromEnvironment(
+      'apiKey',
+      defaultValue: 'AIzaSyCbpMaZd3Tlj09sJqWOOEqduTss8W3eFI8',
+    ),
+    appId: String.fromEnvironment(
+      'appId',
+      defaultValue: '1:879135523749:ios:486bef4d7b38efa072de4c',
+    ),
+    messagingSenderId: String.fromEnvironment(
+      'messagingSenderId',
+      defaultValue: '879135523749',
+    ),
+    projectId: String.fromEnvironment(
+      'projectId',
+      defaultValue: 'menya-summative',
+    ),
+    storageBucket: String.fromEnvironment(
+      'storageBucket',
+      defaultValue: 'menya-summative.firebasestorage.app',
+    ),
+    iosBundleId: String.fromEnvironment(
+      'iosBundleId',
+      defaultValue: 'com.example.mobileDevSummativeMenya',
+    ),
   );
 }

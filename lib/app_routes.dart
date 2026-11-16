@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_dev_summative_menya/screens/assessment/assessment_reading.dart';
 import 'package:mobile_dev_summative_menya/screens/assessment/prepare_reading.dart';
+import 'package:mobile_dev_summative_menya/screens/assessment/setup_math_test.dart';
+import 'package:mobile_dev_summative_menya/screens/assessment/setup_reading_test.dart';
 import '/screens/assessment/start_assessment.dart';
 import 'package:mobile_dev_summative_menya/screens/assessment/assessment_math.dart';
 import 'package:mobile_dev_summative_menya/screens/assessment/select_learners.dart';
@@ -22,6 +24,8 @@ class AppRoutes {
   static const takeReading = '/assess/reading/take';
   static const selectLearners = '/assess/select-learners';
   static const selectClass = '/assess/select-class';
+  static const setupReading = '/assess/setup-reading';
+  static const setupMath = '/assess/setup-math';
   static const progress = '/progress';
   static const review = '/review/:resultId';
   static const supportPlan = '/support-plan/:studentId';
@@ -34,5 +38,7 @@ class AppRoutes {
     takeReading: (context) => const ReadingPausedPage(),
     selectLearners: (context) => const SelectLearnersPage(),
     selectClass: (context) => const SelectClassesPage(),
+    setupReading: (context) => const TestSetupReadingPage(),
+    setupMath: (context) => const TestSetupMathPage(),
   };
 }
