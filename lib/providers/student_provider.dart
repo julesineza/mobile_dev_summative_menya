@@ -49,7 +49,8 @@ class StudentProvider extends ChangeNotifier {
     return null;
   }
 
-  void listenToClass(String classId) {
+  void listenToClass(String classId, {String className = ''}) {
+    this.className = className;
     if (this.classId == classId && _sub != null) return;
     this.classId = classId;
     _sub?.cancel();
