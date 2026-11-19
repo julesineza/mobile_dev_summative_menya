@@ -15,4 +15,6 @@ class AppColors {
   static const Color border = Color.fromARGB(255, 201, 207, 200);
   static const Color divider = Color.fromARGB(255, 218, 219, 212);
   static const Color barBorder = Color.fromARGB(255, 227, 225, 219);
+  static const Color watch = Color.fromARGB(255, 218, 135, 58);
+  static const Color watchFill = Color.fromARGB(255, 249, 237, 226);
 }
