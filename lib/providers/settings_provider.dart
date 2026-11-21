@@ -9,7 +9,7 @@ class SettingsProvider extends ChangeNotifier {
     final themeName = _prefs.getString(themeKey);
     _themeMode = ThemeMode.values.firstWhere(
       (m) => m.name == themeName,
-      orElse: () => ThemeMode.system,
+            orElse: () => ThemeMode.light,
     );
     _notificationsEnabled = _prefs.getBool(notificationsKey) ?? true;
     _rememberedEmail = _prefs.getString(emailKey) ?? '';

@@ -26,7 +26,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final settings = SettingsProvider(await SharedPreferences.getInstance());
 
-    expect(settings.themeMode, ThemeMode.system);
+    expect(settings.themeMode, ThemeMode.light);
     expect(settings.notificationsEnabled, isTrue);
     expect(settings.rememberedEmail, isEmpty);
     expect(settings.selectedClassId, isNull);
