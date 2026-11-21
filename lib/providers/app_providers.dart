@@ -1,18 +1,42 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'assessment_provider.dart';
+import 'settings_provider.dart';
+import '../services/preferences_service.dart';
 
-/// Every feature's providers are registered here, wrapped around MaterialApp in main.dart.
-/// Keep one list per feature so members rarely edit the same lines.
-List<SingleChildWidget> get appProviders => [
+/// Builds the full provider list, wiring [PreferencesService] into
+/// [SettingsProvider] and seeding [AssessmentProvider] with the saved active class.
+///
+/// Call this from [main.dart] after [PreferencesService.init()] has completed.
+List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
       ...authProviders,
       ...studentProviders,
-      ...assessmentProviders,
+      ChangeNotifierProvider<SettingsProvider>(
+        create: (_) => SettingsProvider(prefs),
+      ),
+      ChangeNotifierProxyProvider<SettingsProvider, AssessmentProvider>(
+        create: (_) =>
+            AssessmentProvider(initialClassName: prefs.activeClass),
+        update: (_, settings, previous) {
+          // Keep provider in sync when the active class changes (e.g. user picks a new class).
+          final provider = previous ?? AssessmentProvider(initialClassName: settings.activeClass);
+          if (provider.selectedClassName != settings.activeClass &&
+              settings.activeClass.isNotEmpty) {
+            provider.syncClassFromSettings(settings.activeClass);
+          }
+          return provider;
+        },
+      ),
       ...reviewProviders,
     ];
 
-// Replace these empty lists with real ChangeNotifierProviders as you build.
-// Example: ChangeNotifierProvider(create: (_) => AssessmentProvider(repo))
-List<SingleChildWidget> get authProviders => [];       // Member 1
-List<SingleChildWidget> get studentProviders => [];    // Member 2
-List<SingleChildWidget> get assessmentProviders => []; // Member 3
-List<SingleChildWidget> get reviewProviders => [];     // Member 4
+// ── Per-feature provider lists (kept separate so each member rarely conflicts) ──
+
+/// Auth providers — owned by Member 1.
+List<SingleChildWidget> get authProviders => [];
+
+/// Student / class analytics providers — owned by Member 2.
+List<SingleChildWidget> get studentProviders => [];
+
+/// Post-assessment review providers — owned by Member 4.
+List<SingleChildWidget> get reviewProviders => [];
