@@ -12,7 +12,20 @@
           "package_name": "com.example.mobile_dev_summative_menya"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "879135523749-hbt4uuij67iacv02m7tdsrjaae9oofgr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mobile_dev_summative_menya",
+            "certificate_hash": "b95d7405c6d88c1f3f26bea451a03b2cbd1c7553"
+          }
+        },
+        {
+          "client_id": "879135523749-77i6eoogo1jeb9ipk9769qqutlmbulf3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCibqAGPGk1Trn_Ac9tXga9Yi2CmbOW95M"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "879135523749-77i6eoogo1jeb9ipk9769qqutlmbulf3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "879135523749-iuts2qdkr1ief2s8lc61128o5ig2gthg.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mobileDevSummativeMenya"
+              }
+            }
+          ]
         }
       }
     }
