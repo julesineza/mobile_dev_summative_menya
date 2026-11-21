@@ -52,3 +52,5 @@ bootstrap_menya.sh
 # Do NOT commit: service account keys, .env
 *.env
 **/service-account*.json
+
+env.json
