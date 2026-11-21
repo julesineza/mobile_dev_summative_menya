@@ -30,12 +30,17 @@ class AssessmentLearner {
 }
 
 class AssessmentProvider extends ChangeNotifier {
-  AssessmentProvider({AssessmentService? service})
-    : _service = service ?? AssessmentService();
+  AssessmentProvider({AssessmentService? service, String? initialClassName})
+      : _service = service ?? AssessmentService() {
+    if (initialClassName != null && initialClassName.isNotEmpty) {
+      _selectedClassName = initialClassName;
+      _selectedClassId = _resolveClassId(initialClassName);
+    }
+  }
 
-  static const fallbackSchoolId = 'temporary-school';
-  static const fallbackClassId = 'temporary-class-p3-a';
-  static const fallbackTeacherId = 'temporary-teacher';
+  static const fallbackSchoolId = 'gs-kigali-central';
+  static const fallbackClassId = 'class-p3-a';
+  static const fallbackTeacherId = 'teacher-1';
 
   final AssessmentService _service;
   UserChoice _selectedAssessment = UserChoice.none;
@@ -51,7 +56,6 @@ class AssessmentProvider extends ChangeNotifier {
   double? _readingWordsPerMinute;
   List<String> _mathAnswers = const [];
   List<AssessmentResult> _completedResults = [];
-  bool _sessionPersisted = false;
 
   UserChoice get selectedChoice => _selectedAssessment;
   String get selectedClassName => _selectedClassName;
@@ -69,13 +73,27 @@ class AssessmentProvider extends ChangeNotifier {
   double? get readingAccuracy => _readingAccuracy;
   double? get readingWordsPerMinute => _readingWordsPerMinute;
   List<String> get mathAnswers => _mathAnswers;
-  List<AssessmentResult> get completedResults => List.unmodifiable(_completedResults);
+  List<AssessmentResult> get completedResults =>
+      List.unmodifiable(_completedResults);
+
+  static String _resolveClassId(String className) {
+    final sanitized = className.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
+    return 'class-$sanitized';
+  }
+
+  /// Called by [ChangeNotifierProxyProvider] when [SettingsProvider.activeClass] changes.
+  /// Updates the selected class without firing a full reset.
+  void syncClassFromSettings(String className) {
+    if (className.isEmpty || _selectedClassName == className) return;
+    _selectedClassName = className;
+    _selectedClassId = _resolveClassId(className);
+    notifyListeners();
+  }
 
   void setSelectedAssessment(UserChoice assessment) {
     _selectedAssessment = assessment;
     _test = null;
     _session = null;
-    _sessionPersisted = false;
     _currentLearnerIndex = 0;
     _completedResults = [];
     notifyListeners();
@@ -89,16 +107,13 @@ class AssessmentProvider extends ChangeNotifier {
     final subject = _selectedAssessment == UserChoice.math
         ? Subject.math
         : Subject.reading;
-    try {
-      _test = await _service.getTest(
-        schoolId: fallbackSchoolId,
-        subject: subject,
-        grade: 3,
-      );
-    } catch (error) {
-      debugPrint('Unable to load assessment test: $error');
-    }
-    _test ??= _fallbackTest(subject);
+
+    final grade = _parseGrade(_selectedClassName);
+    _test = await _service.getTest(
+      schoolId: fallbackSchoolId,
+      subject: subject,
+      grade: grade,
+    );
     notifyListeners();
   }
 
@@ -154,61 +169,45 @@ class AssessmentProvider extends ChangeNotifier {
     _learners = List.unmodifiable(learners);
     _currentLearnerIndex = 0;
     _session = null;
-    _sessionPersisted = false;
     _completedResults = [];
     notifyListeners();
   }
 
+  /// Loads students directly from Firebase Firestore `students` collection.
   Future<List<AssessmentLearner>> loadLearners() async {
-    try {
-      final students = await _service.getStudents(classId: _selectedClassId);
-      if (students.isEmpty) {
-        return _fallbackLearners();
-      }
-      return students
-          .map(
-            (student) => AssessmentLearner(
-              id: student.id,
-              name: student.name,
-              initials: _initials(student.name),
-              className: 'Class $_selectedClassName',
-              schoolId: student.schoolId,
-              classId: student.classId,
-            ),
-          )
-          .toList();
-    } catch (error) {
-      debugPrint('Unable to load learners: $error');
-      return _fallbackLearners();
-    }
+    final students = await _service.getStudents(
+      classId: _selectedClassId,
+      schoolId: fallbackSchoolId,
+    );
+    return students
+        .map(
+          (student) => AssessmentLearner(
+            id: student.id,
+            name: student.name,
+            initials: _initials(student.name),
+            className: 'Class $_selectedClassName',
+            schoolId: student.schoolId,
+            classId: student.classId,
+          ),
+        )
+        .toList();
   }
 
+  /// Creates a live assessment session document directly in Cloud Firestore.
   Future<void> ensureSession() async {
     if (_session != null) return;
-    final test =
-        _test ??
-        _fallbackTest(
-          _selectedAssessment == UserChoice.math
-              ? Subject.math
-              : Subject.reading,
-        );
-    _test ??= test;
-    try {
-      _session = await _service.createSession(
-        schoolId: currentLearner?.schoolId ?? fallbackSchoolId,
-        classId: currentLearner?.classId ?? fallbackClassId,
-        teacherId: fallbackTeacherId,
-        test: test,
-        studentIds: _learners.map((learner) => learner.id).toList(),
-      );
-      _sessionPersisted = true;
-    } catch (error) {
-      _session = _localSession(test);
-      _sessionPersisted = false;
-      debugPrint(
-        '[AssessmentProvider] using local session ${_session!.id}. error=$error',
-      );
-    }
+    if (_test == null) await prepareAssessment();
+
+    final activeTest = _test!;
+    final studentIds = _learners.map((learner) => learner.id).toList();
+
+    _session = await _service.createSession(
+      schoolId: currentLearner?.schoolId ?? fallbackSchoolId,
+      classId: currentLearner?.classId ?? _selectedClassId,
+      teacherId: fallbackTeacherId,
+      test: activeTest,
+      studentIds: studentIds,
+    );
     notifyListeners();
   }
 
@@ -241,156 +240,114 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Saves the student reading assessment result directly into Cloud Firestore.
   Future<AssessmentResult> saveReadingResult(ResponseLevel level) async {
     final learner = _requireLearner();
-    final test = _test ?? _fallbackTest(Subject.reading);
+    if (_test == null) await prepareAssessment();
+    final activeTest = _test!;
     await ensureSession();
-    try {
-      final result = await _service.saveResult(
-        schoolId: learner.schoolId,
-        classId: learner.classId,
-        sessionId: _session!.id,
-        studentId: learner.id,
-        teacherId: fallbackTeacherId,
-        subject: Subject.reading,
-        language: test.language,
-        level: level,
-        autoLevel: Grading.levelFromPercent(_readingAccuracy ?? 0),
-        durationSec: _readingDurationSec,
-        wordsPerMinute: _readingWordsPerMinute,
-        accuracy: _readingAccuracy,
-        errorWords: _errorWords,
-      );
-      _completedResults.add(result);
-      notifyListeners();
-      return result;
-    } catch (error) {
-      debugPrint('[AssessmentProvider] saveReadingResult local save: $error');
-      final localResult = AssessmentResult(
-        id: 'local-res-${DateTime.now().microsecondsSinceEpoch}',
-        schoolId: learner.schoolId,
-        classId: learner.classId,
-        sessionId: _session!.id,
-        studentId: learner.id,
-        teacherId: fallbackTeacherId,
-        subject: Subject.reading,
-        language: test.language,
-        level: level,
-        autoLevel: Grading.levelFromPercent(_readingAccuracy ?? 0),
-        durationSec: _readingDurationSec,
-        createdAt: DateTime.now(),
-        wordsPerMinute: _readingWordsPerMinute,
-        accuracy: _readingAccuracy,
-        errorWords: _errorWords,
-      );
-      _completedResults.add(localResult);
-      notifyListeners();
-      return localResult;
-    }
+
+    final result = await _service.saveResult(
+      schoolId: learner.schoolId,
+      classId: learner.classId,
+      sessionId: _session!.id,
+      studentId: learner.id,
+      teacherId: fallbackTeacherId,
+      subject: Subject.reading,
+      language: activeTest.language,
+      level: level,
+      autoLevel: Grading.levelFromPercent(_readingAccuracy ?? 0),
+      durationSec: _readingDurationSec,
+      wordsPerMinute: _readingWordsPerMinute,
+      accuracy: _readingAccuracy,
+      errorWords: _errorWords,
+    );
+
+    _completedResults.add(result);
+    notifyListeners();
+    return result;
   }
 
-  Future<AssessmentResult> saveMathResult(ResponseLevel level) async {
+  /// Saves the student math assessment result directly into Cloud Firestore.
+  Future<AssessmentResult> saveMathResult(
+    ResponseLevel level, {
+    int durationSec = 0,
+  }) async {
     final learner = _requireLearner();
-    final test = _test ?? _fallbackTest(Subject.math);
+    if (_test == null) await prepareAssessment();
+    final activeTest = _test!;
     await ensureSession();
+
     final correct = _mathAnswers
         .asMap()
         .entries
         .where(
           (entry) =>
-              entry.key < test.questions.length &&
+              entry.key < activeTest.questions.length &&
               entry.value.trim().toLowerCase() ==
-                  test.questions[entry.key].answer.trim().toLowerCase(),
+                  activeTest.questions[entry.key].answer.trim().toLowerCase(),
         )
         .length;
+
     final accuracy = Grading.mathPercent(
       itemsCorrect: correct,
-      itemsTotal: test.questions.length,
+      itemsTotal: activeTest.questions.length,
     );
-    try {
-      final result = await _service.saveResult(
-        schoolId: learner.schoolId,
-        classId: learner.classId,
-        sessionId: _session!.id,
-        studentId: learner.id,
-        teacherId: fallbackTeacherId,
-        subject: Subject.math,
-        language: test.language,
-        level: level,
-        autoLevel: Grading.levelFromPercent(accuracy),
-        durationSec: 0,
-        accuracy: accuracy,
-        itemsCorrect: correct,
-        itemsTotal: test.questions.length,
-      );
-      _completedResults.add(result);
-      notifyListeners();
-      return result;
-    } catch (error) {
-      debugPrint('[AssessmentProvider] saveMathResult local save: $error');
-      final localResult = AssessmentResult(
-        id: 'local-res-${DateTime.now().microsecondsSinceEpoch}',
-        schoolId: learner.schoolId,
-        classId: learner.classId,
-        sessionId: _session!.id,
-        studentId: learner.id,
-        teacherId: fallbackTeacherId,
-        subject: Subject.math,
-        language: test.language,
-        level: level,
-        autoLevel: Grading.levelFromPercent(accuracy),
-        durationSec: 0,
-        createdAt: DateTime.now(),
-        accuracy: accuracy,
-        itemsCorrect: correct,
-        itemsTotal: test.questions.length,
-      );
-      _completedResults.add(localResult);
-      notifyListeners();
-      return localResult;
-    }
+
+    final result = await _service.saveResult(
+      schoolId: learner.schoolId,
+      classId: learner.classId,
+      sessionId: _session!.id,
+      studentId: learner.id,
+      teacherId: fallbackTeacherId,
+      subject: Subject.math,
+      language: activeTest.language,
+      level: level,
+      autoLevel: Grading.levelFromPercent(accuracy),
+      durationSec: durationSec,
+      accuracy: accuracy,
+      itemsCorrect: correct,
+      itemsTotal: activeTest.questions.length,
+    );
+
+    _completedResults.add(result);
+    notifyListeners();
+    return result;
   }
 
   Future<bool> moveToNextLearner() async {
     if (!hasNextLearner) {
-      debugPrint(
-        '[AssessmentProvider] completing final session=${_session?.id}',
-      );
       if (_session != null) {
         await _service.completeSession(_session!.id);
       }
       return false;
     }
-    debugPrint(
-      '[AssessmentProvider] moving from learner index=$_currentLearnerIndex',
-    );
     _currentLearnerIndex++;
-    _errorWords = [];
-    _readingDurationSec = 0;
-    _readingAccuracy = null;
-    _readingWordsPerMinute = null;
-    _mathAnswers = const [];
+    _resetLearnerState();
     notifyListeners();
     return true;
   }
 
-  bool skipCurrentLearner() {
-    if (!hasNextLearner) return false;
-    _currentLearnerIndex++;
+  void skipCurrentLearner() {
+    if (hasNextLearner) {
+      _currentLearnerIndex++;
+      _resetLearnerState();
+      notifyListeners();
+    }
+  }
+
+  void _resetLearnerState() {
     _errorWords = [];
     _readingDurationSec = 0;
     _readingAccuracy = null;
     _readingWordsPerMinute = null;
     _mathAnswers = const [];
-    notifyListeners();
-    return true;
   }
 
   void resetAssessment() {
     _selectedAssessment = UserChoice.none;
     _test = null;
     _session = null;
-    _sessionPersisted = false;
     _learners = const [];
     _currentLearnerIndex = 0;
     _errorWords = [];
@@ -409,23 +366,13 @@ class AssessmentProvider extends ChangeNotifier {
         'Select at least one learner before starting an assessment.',
       );
     }
-
     return learner;
   }
 
-  AssessmentSession _localSession(AssessmentTest test) {
-    final now = DateTime.now();
-    return AssessmentSession(
-      id: 'local-${now.microsecondsSinceEpoch}',
-      schoolId: currentLearner?.schoolId ?? fallbackSchoolId,
-      classId: currentLearner?.classId ?? fallbackClassId,
-      teacherId: fallbackTeacherId,
-      testId: test.id,
-      subject: test.subject,
-      language: test.language,
-      studentIds: _learners.map((learner) => learner.id).toList(),
-      createdAt: now,
-    );
+  int _parseGrade(String className) {
+    if (className.contains('1')) return 1;
+    if (className.contains('2')) return 2;
+    return 3;
   }
 
   String _initials(String name) {
@@ -439,71 +386,4 @@ class AssessmentProvider extends ChangeNotifier {
         .substring(0, trimmed.length > 2 ? 2 : trimmed.length)
         .toUpperCase();
   }
-
-  List<AssessmentLearner> _fallbackLearners() {
-    return [
-      AssessmentLearner(
-        id: 'temporary-student-bruno',
-        name: 'Bruno Niyonsaba',
-        initials: 'BN',
-        className: 'Class $_selectedClassName',
-        schoolId: fallbackSchoolId,
-        classId: _selectedClassId,
-      ),
-      AssessmentLearner(
-        id: 'temporary-student-fiona',
-        name: 'Fiona Uwase',
-        initials: 'FU',
-        className: 'Class $_selectedClassName',
-        schoolId: fallbackSchoolId,
-        classId: _selectedClassId,
-      ),
-      AssessmentLearner(
-        id: 'temporary-student-aliane',
-        name: 'Aliane Umutoni',
-        initials: 'AU',
-        className: 'Class $_selectedClassName',
-        schoolId: fallbackSchoolId,
-        classId: _selectedClassId,
-      ),
-      AssessmentLearner(
-        id: 'temporary-student-cynthia',
-        name: 'Cynthia Gisa',
-        initials: 'CG',
-        className: 'Class $_selectedClassName',
-        schoolId: fallbackSchoolId,
-        classId: _selectedClassId,
-      ),
-    ];
-  }
-
-  AssessmentTest _fallbackTest(Subject subject) {
-    if (subject == Subject.math) {
-      return AssessmentTest(
-        id: 'fallback-math-level-2',
-        schoolId: fallbackSchoolId,
-        createdBy: fallbackTeacherId,
-        title: 'Math Quick Check',
-        subject: Subject.math,
-        grade: 3,
-        createdAt: DateTime.now(),
-        questions: const [
-          TestQuestion(prompt: '12 ÷ 3 = ?', answer: '4'),
-          TestQuestion(prompt: '6 + 7 = ?', answer: '13'),
-          TestQuestion(prompt: '5 × 2 = ?', answer: '10'),
-        ],
-      );
-    }
-    return AssessmentTest(
-      id: 'fallback-reading-level-2',
-      schoolId: fallbackSchoolId,
-      createdBy: fallbackTeacherId,
-      title: 'English Reading Level 2',
-      subject: Subject.reading,
-      grade: 3,
-      createdAt: DateTime.now(),
-      passageText: 'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.',
-    );
-  }
 }
-

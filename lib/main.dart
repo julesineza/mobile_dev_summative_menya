@@ -7,10 +7,14 @@ import 'app_routes.dart';
 import 'core/constants/app_theme.dart';
 import 'firebase_options.dart';
 import 'providers/app_providers.dart';
+import 'providers/settings_provider.dart';
+import 'services/preferences_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Object? startupWarning;
+
+  // Load SharedPreferences (theme, active class, timer mode, etc.) before the UI starts.
+  final prefs = await PreferencesService.init();
 
   try {
     await Firebase.initializeApp(
@@ -23,71 +27,32 @@ Future<void> main() async {
     }
   } catch (error) {
     debugPrint('[Firebase Startup Warning]: $error');
-    startupWarning = error;
+    // Firebase failure does not block the app — preferences still load normally.
   }
 
-  runApp(MyApp(startupError: startupWarning));
+  runApp(MyApp(prefs: prefs));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, this.startupError});
+  const MyApp({super.key, required this.prefs});
 
-  final Object? startupError;
+  final PreferencesService prefs;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: appProviders,
-      child: MaterialApp(
-        title: 'Menya',
-        theme: AppTheme.light,
-        initialRoute: AppRoutes.start_assessment,
-        routes: AppRoutes.routes,
-      ),
-    );
-  }
-}
-
-class StartupErrorPage extends StatelessWidget {
-  const StartupErrorPage({required this.error, super.key});
-
-  final Object error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.cloud_off,
-                size: 56,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Firebase Notice',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text('$error', textAlign: TextAlign.center),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pushReplacementNamed(
-                    AppRoutes.start_assessment,
-                  );
-                },
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Continue to App (Offline Mode)'),
-              ),
-            ],
-          ),
-        ),
+      providers: buildProviders(prefs),
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            title: 'Menya',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: settings.themeMode,
+            initialRoute: AppRoutes.start_assessment,
+            routes: AppRoutes.routes,
+          );
+        },
       ),
     );
   }

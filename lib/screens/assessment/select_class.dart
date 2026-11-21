@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/assessment_provider.dart';
+import '../../providers/settings_provider.dart';
 
 class Grade {
   final String level;
@@ -266,10 +267,13 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                       : () {
                           final selected = selectedGrade!;
                           final formattedName = selected.level.replaceAll(' ', '-');
+                          // Update AssessmentProvider (session-scoped).
                           context.read<AssessmentProvider>().setSelectedClass(
                                 name: formattedName,
                                 id: 'class-${formattedName.toLowerCase()}',
                               );
+                          // Persist to SharedPreferences via SettingsProvider (survives app restart).
+                          context.read<SettingsProvider>().setActiveClass(formattedName);
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

@@ -5,39 +5,31 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/colors.dart';
 
-class Learner {
+// ── Local UI-only model ───────────────────────────────────────────────────────
+// Wraps [AssessmentLearner] with a selection toggle for the multi-select UI.
+// schoolId and classId are carried from Firestore so the provider gets real IDs.
+
+class _UILearner {
   final String id;
   final String name;
   final String initials;
   final String className;
+  final String schoolId;
+  final String classId;
   bool isSelected;
 
-  Learner({
+  _UILearner({
     required this.id,
     required this.name,
     required this.initials,
     required this.className,
+    required this.schoolId,
+    required this.classId,
     this.isSelected = false,
   });
 }
 
-String getInitials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+'));
-  
-  if (parts.isEmpty || parts[0].isEmpty) return '';
-
-  if (parts.length >= 2) {
-    final firstInitial = parts.first[0];
-    final lastInitial = parts.last[0];
-    return '$firstInitial$lastInitial'.toUpperCase();
-  } 
-  
-  final singleName = parts[0];
-  return singleName.length >= 2 
-      ? singleName.substring(0, 2).toUpperCase() 
-      : singleName.toUpperCase();
-}
-
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 class SelectLearnersPage extends StatefulWidget {
   const SelectLearnersPage({super.key});
@@ -47,12 +39,10 @@ class SelectLearnersPage extends StatefulWidget {
 }
 
 class _SelectLearnersPageState extends State<SelectLearnersPage> {
-  List<Learner> learners = [
-    Learner(id: 'temporary-student-bruno', name: 'Bruno Niyonsaba', initials: getInitials('Bruno Niyonsaba'), className: 'Class P3-A'),
-    Learner(id: 'temporary-student-fiona', name: 'Fiona Uwase', initials: getInitials('Fiona Uwase'), className: 'Class P3-A'),
-    Learner(id: 'temporary-student-aliane', name: 'Aliane Umutoni', initials: getInitials('Aliane Umutoni'), className: 'Class P3-A'),
-    Learner(id: 'temporary-student-cynthia', name: 'Cynthia Gisa', initials: getInitials('Cynthia Gisa'), className: 'Class P3-A'),
-  ];
+  // Start with an empty list — Firestore is the only source of truth.
+  List<_UILearner> _learners = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -61,29 +51,54 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
   }
 
   Future<void> _loadLearners() async {
-    final loaded = await context.read<AssessmentProvider>().loadLearners();
-    if (!mounted || loaded.isEmpty) return;
     setState(() {
-      learners = loaded
-          .map(
-            (learner) => Learner(
-              id: learner.id,
-              name: learner.name,
-              initials: learner.initials,
-              className: learner.className,
-            ),
-          )
-          .toList();
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final provider = context.read<AssessmentProvider>();
+      // Try Firestore first.
+      var loaded = await provider.loadLearners();
+
+      // If Firestore returned nothing, use whatever the provider already has
+      // (e.g. pre-loaded by tests or by a previous setLearners call).
+      if (loaded.isEmpty && provider.learners.isNotEmpty) {
+        loaded = provider.learners;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _learners = loaded
+            .map(
+              (l) => _UILearner(
+                id: l.id,
+                name: l.name,
+                initials: l.initials,
+                className: l.className,
+                schoolId: l.schoolId,
+                classId: l.classId,
+              ),
+            )
+            .toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not load learners. Check your connection.';
+      });
+    }
   }
 
-  int get selectedCount => learners.where((e) => e.isSelected).length;
-  bool get allSelected => selectedCount == learners.length;
+  int get _selectedCount => _learners.where((e) => e.isSelected).length;
+  bool get _allSelected => _learners.isNotEmpty && _selectedCount == _learners.length;
 
-  void toggleAll() {
+  void _toggleAll() {
     setState(() {
-      final newValue = !allSelected;
-      for (var l in learners) {
+      final newValue = !_allSelected;
+      for (final l in _learners) {
         l.isSelected = newValue;
       }
     });
@@ -92,13 +107,14 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
   @override
   Widget build(BuildContext context) {
     const green = AppColors.button;
-    const lightGreen = Color(0xFFD9EADF);
+    const lightGreen = AppColors.primarySoft;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // ── Top bar ────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
@@ -125,7 +141,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: Colors.black54,
+                      color: AppColors.secondaryText,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -133,199 +149,303 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
               ),
             ),
 
+            // ── Body ───────────────────────────────────────────────────────
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                children: [
-                  const Text(
-                    'Select learners',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'Choose a small group for this session.',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Section header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'P3-A • 6 SAMPLE LEARNERS',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: toggleAll,
-                        child: Text(
-                          allSelected ? 'Deselect all' : 'Select all',
-                          style: const TextStyle(
-                            color: green,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Learner cards
-                  ...learners.map((learner) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => learner.isSelected = !learner.isSelected);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: learner.isSelected ? green : const Color(0xFFE8DDC8),
-                              width: learner.isSelected ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: lightGreen,
-                                child: Text(
-                                  learner.initials,
-                                  style: const TextStyle(
-                                    color: green,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      learner.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      learner.className,
-                                      style: const TextStyle(
-                                        color: Colors.black54,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Custom checkbox
-                              Container(
-                                width: 26,
-                                height: 26,
-                                decoration: BoxDecoration(
-                                  color: learner.isSelected ? green : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
-                                    color: learner.isSelected ? green : Colors.grey.shade400,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: learner.isSelected
-                                    ? const Icon(Icons.check, color: Colors.white, size: 18)
-                                    : null,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-
-                  const SizedBox(height: 60),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'You can skip an absent learner or pause between checks.',
-                      style: TextStyle(fontSize: 15, color: Colors.black54, height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                      ? _buildErrorState(green)
+                      : _learners.isEmpty
+                          ? _buildEmptyState(green)
+                          : _buildLearnerList(green, lightGreen),
             ),
 
-            // Bottom button
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final selected = learners.where((e) => e.isSelected).toList();
-                    if (selected.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Select at least one learner.')),
-                      );
-                      return;
-                    }
+            // ── Bottom button ──────────────────────────────────────────────
+            if (!_isLoading && _errorMessage == null)
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _selectedCount == 0
+                        ? null
+                        : () async {
+                            final selected =
+                                _learners.where((e) => e.isSelected).toList();
 
-                    final provider = context.read<AssessmentProvider>();
-                    provider.setLearners(
-                      selected
-                          .map(
-                            (learner) => AssessmentLearner(
-                              id: learner.id,
-                              name: learner.name,
-                              initials: learner.initials,
-                              className: learner.className,
-                              schoolId: AssessmentProvider.fallbackSchoolId,
-                              classId: AssessmentProvider.fallbackClassId,
-                            ),
-                          )
-                          .toList(),
-                    );
-                    await provider.prepareAssessment();
+                            final provider = context.read<AssessmentProvider>();
+                            provider.setLearners(
+                              selected
+                                  .map(
+                                    (l) => AssessmentLearner(
+                                      id: l.id,
+                                      name: l.name,
+                                      initials: l.initials,
+                                      className: l.className,
+                                      // Use real IDs from Firestore, not hardcoded fallbacks.
+                                      schoolId: l.schoolId,
+                                      classId: l.classId,
+                                    ),
+                                  )
+                                  .toList(),
+                            );
+                            await provider.prepareAssessment();
 
-                    if (!mounted) return;
-                    final route = provider.selectedChoice == UserChoice.reading
-                        ? AppRoutes.prepareReading
-                        : AppRoutes.assessMath;
-                    Navigator.of(context).pushNamed(route);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                            if (!mounted) return;
+                            final route =
+                                provider.selectedChoice == UserChoice.reading
+                                    ? AppRoutes.prepareReading
+                                    : AppRoutes.assessMath;
+                            Navigator.of(context).pushNamed(route);
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: green,
+                      disabledBackgroundColor: green.withOpacity(0.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Continue with $selectedCount learners',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                    child: Text(
+                      _selectedCount == 0
+                          ? 'Select learners to continue'
+                          : 'Continue with $_selectedCount learner${_selectedCount == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── List body ─────────────────────────────────────────────────────────────
+
+  Widget _buildLearnerList(Color green, Color lightGreen) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      children: [
+        const Text(
+          'Select learners',
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Choose a small group for this session.',
+          style: TextStyle(fontSize: 15, color: AppColors.secondaryText),
+        ),
+        const SizedBox(height: 20),
+
+        // Select-all row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${_learners.length} LEARNERS IN CLASS',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryText,
+                letterSpacing: 0.5,
+              ),
+            ),
+            GestureDetector(
+              onTap: _toggleAll,
+              child: Text(
+                _allSelected ? 'Deselect all' : 'Select all',
+                style: const TextStyle(
+                  color: AppColors.button,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Learner cards
+        ..._learners.map((learner) {
+          final isSelected = learner.isSelected;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GestureDetector(
+              onTap: () => setState(() => learner.isSelected = !learner.isSelected),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                decoration: BoxDecoration(
+                  color: isSelected ? lightGreen : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected ? green : Colors.grey.shade200,
+                    width: 1.5,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    // Avatar
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isSelected ? green : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        learner.initials,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : AppColors.secondaryText,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    // Name + class
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            learner.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: AppColors.text,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            learner.className,
+                            style: const TextStyle(
+                              color: AppColors.secondaryText,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Checkbox
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: isSelected ? green : Colors.transparent,
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(
+                          color: isSelected ? green : Colors.grey.shade400,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white, size: 18)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 60),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'You can skip an absent learner or pause between checks.',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.secondaryText,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Empty / error states ──────────────────────────────────────────────────
+
+  Widget _buildEmptyState(Color green) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.people_outline, size: 64, color: AppColors.secondaryText),
+            const SizedBox(height: 16),
+            const Text(
+              'No learners found',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No students are registered for this class yet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.secondaryText, height: 1.4),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadLearners,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(backgroundColor: green),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(Color green) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off, size: 64, color: AppColors.secondaryText),
+            const SizedBox(height: 16),
+            const Text(
+              'Connection issue',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Could not load learners.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.secondaryText, height: 1.4),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadLearners,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(backgroundColor: green),
             ),
           ],
         ),
