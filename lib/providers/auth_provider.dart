@@ -77,7 +77,8 @@ class AuthProvider extends ChangeNotifier {
     } on Failure catch (e) {
       state = ViewState.error;
       errorMessage = e.message;
-    } catch (_) {
+       } catch (e) {
+      debugPrint('Auth error: $e');
       state = ViewState.error;
       errorMessage = 'Something went wrong. Please try again.';
     }
