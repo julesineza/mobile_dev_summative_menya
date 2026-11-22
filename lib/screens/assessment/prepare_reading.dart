@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
 import '../../providers/assessment_provider.dart';
 
 class PrepareReadingPage extends StatelessWidget {
@@ -28,19 +29,19 @@ class PrepareReadingPage extends StatelessWidget {
     final totalLearners = provider.totalLearners;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.assessmentColors.background,
       body: SafeArea(
         child: Column(
           children: [
             // Header Top Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
                         Text(
@@ -54,12 +55,12 @@ class PrepareReadingPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Text(
+                  Text(
                     '2 OF 6',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: Colors.black54,
+                      color: context.assessmentColors.secondaryText,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -69,9 +70,9 @@ class PrepareReadingPage extends StatelessWidget {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                 children: [
-                  const Text(
+                  Text(
                     'Prepare reading',
                     style: TextStyle(
                       fontSize: 30,
@@ -79,57 +80,61 @@ class PrepareReadingPage extends StatelessWidget {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'Place the reading passage in front of the learner before starting the timer.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.black54,
+                      color: context.assessmentColors.secondaryText,
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Learner Card
                   if (learner != null)
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.assessmentColors.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(
+                          color: context.assessmentColors.border,
+                        ),
                       ),
                       child: Row(
                         children: [
                           CircleAvatar(
                             radius: 24,
-                            backgroundColor: AppColors.primarySoft,
+                            backgroundColor:
+                                context.assessmentColors.primarySoft,
                             child: Text(
                               learner.initials,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: green,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 15,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   learner.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 16,
                                   ),
                                 ),
-                                const SizedBox(height: 3),
+                                SizedBox(height: 3),
                                 Text(
                                   '${learner.className} • English reading',
-                                  style: const TextStyle(
-                                    color: Colors.black54,
+                                  style: TextStyle(
+                                    color:
+                                        context.assessmentColors.secondaryText,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -137,17 +142,17 @@ class PrepareReadingPage extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primarySoft,
+                              color: context.assessmentColors.primarySoft,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               'Learner $learnerIndex of $totalLearners',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: green,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -158,24 +163,24 @@ class PrepareReadingPage extends StatelessWidget {
                       ),
                     ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Section title for passage
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'ENGLISH PASSAGE (LEVEL 2)',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.secondaryText,
+                          color: context.assessmentColors.secondaryText,
                           letterSpacing: 0.6,
                         ),
                       ),
                       Text(
                         '$wordCount words',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: green,
@@ -183,45 +188,49 @@ class PrepareReadingPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
 
                   // Passage Card
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(18),
+                    padding: EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                        color: context.assessmentColors.border,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '"$passage"',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             height: 1.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.text,
+                            color: context.assessmentColors.text,
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Teacher Instructions
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0F5F1),
+                      color: context.assessmentColors.instructionBg,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.primaryBorder),
+                      border: Border.all(
+                        color: context.assessmentColors.primaryBorder,
+                      ),
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -250,7 +259,7 @@ class PrepareReadingPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13,
                             height: 1.5,
-                            color: Color(0xFF334036),
+                            color: context.assessmentColors.instructionText,
                           ),
                         ),
                       ],
@@ -262,8 +271,8 @@ class PrepareReadingPage extends StatelessWidget {
 
             // Bottom action
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              color: context.assessmentColors.surface,
+              padding: EdgeInsets.fromLTRB(20, 14, 20, 20),
               child: SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -271,8 +280,8 @@ class PrepareReadingPage extends StatelessWidget {
                   onPressed: () {
                     context.push(AppRoutes.takeReading);
                   },
-                  icon: const Icon(Icons.play_arrow, color: Colors.white),
-                  label: const Text(
+                  icon: Icon(Icons.play_arrow, color: Colors.white),
+                  label: Text(
                     'Start reading check',
                     style: TextStyle(
                       fontSize: 16,

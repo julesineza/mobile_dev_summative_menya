@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
 import '../../models/enums.dart';
+import '../../models/school_class.dart';
 import '../../providers/assessment_provider.dart';
+import '../../providers/class_provider.dart';
 
 class TestSetupReadingPage extends StatefulWidget {
   const TestSetupReadingPage({super.key});
@@ -22,9 +25,41 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
 
   String selectedClass = 'P3-A';
   String selectedLanguage = 'English';
+
+  List<SchoolClass> get _classItems {
+    final classes = context.watch<ClassProvider>().classes;
+    if (classes.isNotEmpty) return classes;
+    return const ['P1-A', 'P1-B', 'P2-A', 'P2-B', 'P3-A', 'P3-B']
+        .map(
+          (name) => SchoolClass(
+            id: name,
+            schoolId: '',
+            teacherId: '',
+            name: name,
+            grade: _parseGrade(name),
+          ),
+        )
+        .toList();
+  }
+
+  List<String> get _classNames {
+    final names = _classItems.map((c) => c.name).toList();
+    if (!names.contains(selectedClass)) {
+      names.insert(0, selectedClass);
+    }
+    return names;
+  }
+
   String contentType = 'Word list'; // Word list | Passage
   String timerMode = 'Count up'; // Count up | 60 sec | Custom
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final name = context.read<AssessmentProvider>().selectedClassName;
+    if (name.isNotEmpty) selectedClass = name;
+  }
 
   int get wordCount {
     final text = wordsController.text.trim();
@@ -80,18 +115,15 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
   Future<void> _saveTest() async {
     final title = testNameController.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a test name.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Please enter a test name.')));
       return;
     }
 
     final passage = _buildPassageText();
     if (passage.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please provide words or a passage to read.'),
-        ),
+        SnackBar(content: Text('Please provide words or a passage to read.')),
       );
       return;
     }
@@ -122,17 +154,17 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.assessmentColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: Text(
             'Test Saved',
             style: TextStyle(fontWeight: FontWeight.w800),
           ),
           content: Text(
             'Test "${createdTest.title}" is ready. Would you like to select learners and start assessing now?',
-            style: const TextStyle(height: 1.4),
+            style: TextStyle(height: 1.4),
           ),
           actions: [
             TextButton(
@@ -140,9 +172,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                 Navigator.pop(ctx); // Close dialog
                 context.pop(); // Return to previous page using go_router
               },
-              child: const Text(
+              child: Text(
                 'Done',
-                style: TextStyle(color: AppColors.secondaryText),
+                style: TextStyle(color: context.assessmentColors.secondaryText),
               ),
             ),
             ElevatedButton(
@@ -156,7 +188,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Start test now',
                 style: TextStyle(
                   color: Colors.white,
@@ -181,8 +213,8 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
   @override
   Widget build(BuildContext context) {
     const green = AppColors.button;
-    const bg = AppColors.background;
-    const border = AppColors.border;
+    final bg = context.assessmentColors.background;
+    final border = context.assessmentColors.border;
 
     return Scaffold(
       backgroundColor: bg,
@@ -191,12 +223,12 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
           children: [
             // Top Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
                         Text(
@@ -215,26 +247,26 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
-                  const Text(
+                  Text(
                     'Set up a test',
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
-                      color: AppColors.text,
+                      color: context.assessmentColors.text,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'Choose what learners will read or solve.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: AppColors.secondaryText,
+                      color: context.assessmentColors.secondaryText,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Subject toggle
                   _segmented(
@@ -246,11 +278,11 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                       context.pushReplacement(AppRoutes.setupMath);
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   _label('Test name'),
                   _textField(testNameController, border),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   Row(
                     children: [
@@ -259,16 +291,26 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _label('Class'),
-                            _dropdown(
-                              selectedClass,
-                              ['P3-A', 'P3-B', 'P2-A', 'P1-A'],
-                              (v) => setState(() => selectedClass = v!),
-                              border,
-                            ),
+                            _dropdown(selectedClass, _classNames, (v) {
+                              if (v == null) return;
+                              setState(() => selectedClass = v);
+                              for (final c in _classItems) {
+                                if (c.name == v) {
+                                  context
+                                      .read<AssessmentProvider>()
+                                      .setSelectedClass(
+                                        name: c.name,
+                                        id: c.id,
+                                        schoolId: c.schoolId,
+                                      );
+                                  break;
+                                }
+                              }
+                            }, border),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,17 +327,17 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
 
-                  const Text(
+                  Text(
                     'Reading content',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.text,
+                      color: context.assessmentColors.text,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _segmented(
                     left: 'Word list',
                     right: 'Passage',
@@ -321,7 +363,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   _label(
                     contentType == 'Word list'
@@ -334,40 +376,40 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: context.assessmentColors.surface,
                       hintText: contentType == 'Word list'
                           ? 'Enter words separated by commas...'
                           : 'Enter passage sentences for pupils to read aloud...',
-                      hintStyle: const TextStyle(
-                        color: Colors.black38,
+                      hintStyle: TextStyle(
+                        color: context.assessmentColors.hint,
                         fontSize: 14,
                       ),
-                      contentPadding: const EdgeInsets.all(16),
+                      contentPadding: EdgeInsets.all(16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: border),
+                        borderSide: BorderSide(color: border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: border),
+                        borderSide: BorderSide(color: border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: green, width: 1.5),
+                        borderSide: BorderSide(color: green, width: 1.5),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     contentType == 'Word list'
                         ? '$wordCount words · Separate words with commas.'
                         : '$wordCount words in passage.',
-                    style: const TextStyle(
-                      color: AppColors.secondaryText,
+                    style: TextStyle(
+                      color: context.assessmentColors.secondaryText,
                       fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Timer Card
                   _timerCard(
@@ -378,7 +420,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                     border: border,
                     green: green,
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Save Button
                   SizedBox(
@@ -394,7 +436,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                         elevation: 0,
                       ),
                       child: _isSaving
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
@@ -402,7 +444,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               'Save test',
                               style: TextStyle(
                                 color: Colors.white,
@@ -412,17 +454,17 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Center(
+                  SizedBox(height: 12),
+                  Center(
                     child: Text(
                       'Saved tests are available when starting a check.',
                       style: TextStyle(
-                        color: AppColors.secondaryText,
+                        color: context.assessmentColors.secondaryText,
                         fontSize: 13,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                 ],
               ),
             ),
@@ -433,13 +475,13 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
   }
 
   Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
+    padding: EdgeInsets.only(bottom: 8),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.w700,
         fontSize: 14,
-        color: AppColors.text,
+        color: context.assessmentColors.text,
       ),
     ),
   );
@@ -448,8 +490,8 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     controller: c,
     decoration: InputDecoration(
       filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.all(16),
+      fillColor: context.assessmentColors.surface,
+      contentPadding: EdgeInsets.all(16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: border),
@@ -458,7 +500,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: border),
       ),
-      focusedBorder: const OutlineInputBorder(
+      focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
         borderSide: BorderSide(color: AppColors.button, width: 1.5),
       ),
@@ -471,9 +513,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     ValueChanged<String?> onChanged,
     Color border,
   ) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14),
+    padding: EdgeInsets.symmetric(horizontal: 14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.assessmentColors.surface,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: border),
     ),
@@ -481,19 +523,16 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
       child: DropdownButton<String>(
         value: value,
         isExpanded: true,
-        icon: const Icon(
+        icon: Icon(
           Icons.keyboard_arrow_down,
           size: 20,
-          color: AppColors.secondaryText,
+          color: context.assessmentColors.secondaryText,
         ),
         items: items
             .map(
               (e) => DropdownMenuItem(
                 value: e,
-                child: Text(
-                  e,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
+                child: Text(e, style: TextStyle(fontWeight: FontWeight.w600)),
               ),
             )
             .toList(),
@@ -510,9 +549,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     required VoidCallback onTapRight,
   }) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.barBorder,
+        color: context.assessmentColors.barBorder,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -528,7 +567,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
       GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected ? AppColors.button : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
@@ -539,7 +578,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 14,
-              color: selected ? Colors.white : AppColors.secondaryText,
+              color: selected
+                  ? Colors.white
+                  : context.assessmentColors.secondaryText,
             ),
           ),
         ),
@@ -554,9 +595,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     required Color green,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.assessmentColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: border),
       ),
@@ -565,24 +606,24 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Timer',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
-                  color: AppColors.text,
+                  color: context.assessmentColors.text,
                 ),
               ),
               Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.secondaryText,
+                style: TextStyle(
+                  color: context.assessmentColors.secondaryText,
                   fontSize: 13,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: options.map((o) {
               final isSel = o == selected;
@@ -590,10 +631,12 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                 child: GestureDetector(
                   onTap: () => onSelect(o),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    margin: EdgeInsets.symmetric(horizontal: 3),
+                    padding: EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSel ? green : AppColors.background,
+                      color: isSel
+                          ? green
+                          : context.assessmentColors.background,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: isSel ? green : border),
                     ),
@@ -603,7 +646,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
-                        color: isSel ? Colors.white : AppColors.text,
+                        color: isSel
+                            ? Colors.white
+                            : context.assessmentColors.text,
                       ),
                     ),
                   ),
@@ -611,10 +656,13 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Rubric: 1 Struggling · 2 Developing · 3 Proficient',
-            style: TextStyle(color: AppColors.secondaryText, fontSize: 12),
+            style: TextStyle(
+              color: context.assessmentColors.secondaryText,
+              fontSize: 12,
+            ),
           ),
         ],
       ),

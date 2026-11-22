@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
 import '../../core/grading.dart';
 import '../../models/enums.dart';
 import '../../providers/assessment_provider.dart';
@@ -47,7 +48,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
   void _startTimer() {
     _timer?.cancel();
     if (mounted) setState(() => _isTimerRunning = true);
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsedSeconds++);
     });
   }
@@ -137,7 +138,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
         if (!mounted) return;
         context.go(AppRoutes.assess);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Math assessment completed for all learners!'),
             backgroundColor: AppColors.button,
           ),
@@ -182,8 +183,8 @@ class _AssessmentMathState extends State<AssessmentMath> {
     final totalLearners = provider.totalLearners;
 
     const green = AppColors.button;
-    const bg = AppColors.background;
-    const border = AppColors.border;
+    final bg = context.assessmentColors.background;
+    final border = context.assessmentColors.border;
 
     // Score calculations
     final correctCount = questions.asMap().entries.where((entry) {
@@ -206,13 +207,13 @@ class _AssessmentMathState extends State<AssessmentMath> {
           children: [
             // Top Navigation Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
                         Text(
@@ -227,21 +228,18 @@ class _AssessmentMathState extends State<AssessmentMath> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1E7),
+                      color: context.assessmentColors.mathSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.calculate_outlined,
                           size: 14,
-                          color: Color(0xFFFF6500),
+                          color: context.assessmentColors.mathText,
                         ),
                         SizedBox(width: 4),
                         Text(
@@ -249,7 +247,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
-                            color: Color(0xFFFF6500),
+                            color: context.assessmentColors.mathText,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -262,13 +260,13 @@ class _AssessmentMathState extends State<AssessmentMath> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
                   // Learner Profile Card
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: border),
                     ),
@@ -276,56 +274,56 @@ class _AssessmentMathState extends State<AssessmentMath> {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: const Color(0xFFFFF1E7),
+                          backgroundColor: context.assessmentColors.mathSoft,
                           child: Text(
                             learner?.initials ?? '?',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFFFF6500),
+                              color: context.assessmentColors.mathText,
                               fontSize: 15,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 learner?.name ?? 'Learner',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 17,
-                                  color: AppColors.text,
+                                  color: context.assessmentColors.text,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 '${learner?.className ?? 'Class'} • ${test?.title ?? 'Math Quick Check'}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.secondaryText,
+                                  color: context.assessmentColors.secondaryText,
                                 ),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.background,
+                            color: context.assessmentColors.background,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: border),
                           ),
                           child: Text(
                             '$learnerIndex of $totalLearners',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
-                              color: AppColors.secondaryText,
+                              color: context.assessmentColors.secondaryText,
                             ),
                           ),
                         ),
@@ -333,16 +331,13 @@ class _AssessmentMathState extends State<AssessmentMath> {
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // Timer Card
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: border),
                     ),
@@ -355,18 +350,20 @@ class _AssessmentMathState extends State<AssessmentMath> {
                               _isTimerRunning
                                   ? Icons.timer_outlined
                                   : Icons.timer_off_outlined,
-                              color: _isTimerRunning ? green : Colors.black45,
+                              color: _isTimerRunning
+                                  ? green
+                                  : context.assessmentColors.secondaryText,
                               size: 22,
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Text(
                               _formatDuration(_elapsedSeconds),
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
                                 color: _isTimerRunning
-                                    ? AppColors.text
-                                    : Colors.black45,
+                                    ? context.assessmentColors.text
+                                    : context.assessmentColors.secondaryText,
                                 fontFeatures: const [
                                   FontFeature.tabularFigures(),
                                 ],
@@ -380,7 +377,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                             _isTimerRunning ? Icons.pause : Icons.play_arrow,
                             size: 18,
                             color: _isTimerRunning
-                                ? AppColors.secondaryText
+                                ? context.assessmentColors.secondaryText
                                 : green,
                           ),
                           label: Text(
@@ -388,7 +385,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               color: _isTimerRunning
-                                  ? AppColors.secondaryText
+                                  ? context.assessmentColors.secondaryText
                                   : green,
                             ),
                           ),
@@ -399,7 +396,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 8,
                             ),
@@ -409,44 +406,46 @@ class _AssessmentMathState extends State<AssessmentMath> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Questions Section Title
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Solve questions',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: context.assessmentColors.text,
                         ),
                       ),
                       Text(
                         '${questions.length} total',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.secondaryText,
+                          color: context.assessmentColors.secondaryText,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
 
                   // Questions List
                   if (questions.isEmpty)
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.assessmentColors.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: border),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'No questions configured for this test.',
-                          style: TextStyle(color: AppColors.secondaryText),
+                          style: TextStyle(
+                            color: context.assessmentColors.secondaryText,
+                          ),
                         ),
                       ),
                     )
@@ -463,19 +462,18 @@ class _AssessmentMathState extends State<AssessmentMath> {
                               q.answer.trim().toLowerCase();
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
+                        margin: EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.assessmentColors.surface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: !isAnswered
                                 ? border
                                 : isCorrect
                                 ? green.withValues(alpha: 0.6)
-                                : AppColors.warningStroke.withValues(
-                                    alpha: 0.6,
-                                  ),
+                                : context.assessmentColors.warningStroke
+                                      .withValues(alpha: 0.6),
                             width: isAnswered ? 1.5 : 1.0,
                           ),
                         ),
@@ -487,43 +485,46 @@ class _AssessmentMathState extends State<AssessmentMath> {
                               children: [
                                 Text(
                                   'QUESTION ${i + 1}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 11,
-                                    color: AppColors.secondaryText,
+                                    color:
+                                        context.assessmentColors.secondaryText,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
+                                  padding: EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.background,
+                                    color: context.assessmentColors.background,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     'Expected: ${q.answer}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 12,
-                                      color: AppColors.secondaryText,
+                                      color: context
+                                          .assessmentColors
+                                          .secondaryText,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Text(
                               q.prompt,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.text,
+                                color: context.assessmentColors.text,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
 
                             // 1-Tap Evaluation Buttons: Correct vs Incorrect
                             Row(
@@ -531,15 +532,15 @@ class _AssessmentMathState extends State<AssessmentMath> {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () => _markAnswer(i, q.answer),
-                                    icon: const Icon(Icons.check, size: 18),
-                                    label: const Text('Correct'),
+                                    icon: Icon(Icons.check, size: 18),
+                                    label: Text('Correct'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: isCorrect
                                           ? green
-                                          : AppColors.background,
+                                          : context.assessmentColors.background,
                                       foregroundColor: isCorrect
                                           ? Colors.white
-                                          : AppColors.text,
+                                          : context.assessmentColors.text,
                                       elevation: 0,
                                       side: BorderSide(
                                         color: isCorrect ? green : border,
@@ -547,38 +548,42 @@ class _AssessmentMathState extends State<AssessmentMath> {
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         vertical: 11,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () =>
                                         _markAnswer(i, 'incorrect'),
-                                    icon: const Icon(Icons.close, size: 18),
-                                    label: const Text('Incorrect'),
+                                    icon: Icon(Icons.close, size: 18),
+                                    label: Text('Incorrect'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor:
                                           (isAnswered && !isCorrect)
-                                          ? AppColors.warningStroke
-                                          : AppColors.background,
+                                          ? context
+                                                .assessmentColors
+                                                .warningStroke
+                                          : context.assessmentColors.background,
                                       foregroundColor:
                                           (isAnswered && !isCorrect)
                                           ? Colors.white
-                                          : AppColors.text,
+                                          : context.assessmentColors.text,
                                       elevation: 0,
                                       side: BorderSide(
                                         color: (isAnswered && !isCorrect)
-                                            ? AppColors.warningStroke
+                                            ? context
+                                                  .assessmentColors
+                                                  .warningStroke
                                             : border,
                                       ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         vertical: 11,
                                       ),
                                     ),
@@ -591,13 +596,13 @@ class _AssessmentMathState extends State<AssessmentMath> {
                       );
                     }),
 
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
 
                   // Score Summary & Auto Rubric Suggestion
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: border),
                     ),
@@ -607,17 +612,17 @@ class _AssessmentMathState extends State<AssessmentMath> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Score',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
-                                color: AppColors.text,
+                                color: context.assessmentColors.text,
                               ),
                             ),
                             Text(
                               '$correctCount / ${questions.length} (${percent.toStringAsFixed(0)}%)',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 17,
                                 color: green,
@@ -625,17 +630,17 @@ class _AssessmentMathState extends State<AssessmentMath> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 14),
-                        const Text(
+                        SizedBox(height: 14),
+                        Text(
                           'RUBRIC LEVEL',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.secondaryText,
+                            color: context.assessmentColors.secondaryText,
                             letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
 
                         // Rubric level 1-2-3 chips
                         Row(
@@ -643,21 +648,17 @@ class _AssessmentMathState extends State<AssessmentMath> {
                             final isSelected = activeLevel == lvl;
                             return Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                ),
+                                padding: EdgeInsets.symmetric(horizontal: 3),
                                 child: GestureDetector(
                                   onTap: () {
                                     setState(() => _manualLevel = lvl);
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                    ),
+                                    padding: EdgeInsets.symmetric(vertical: 10),
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? green
-                                          : AppColors.background,
+                                          : context.assessmentColors.background,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: isSelected ? green : border,
@@ -672,10 +673,10 @@ class _AssessmentMathState extends State<AssessmentMath> {
                                             fontSize: 15,
                                             color: isSelected
                                                 ? Colors.white
-                                                : AppColors.text,
+                                                : context.assessmentColors.text,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           _levelName(lvl),
                                           style: TextStyle(
@@ -683,7 +684,9 @@ class _AssessmentMathState extends State<AssessmentMath> {
                                             fontWeight: FontWeight.w600,
                                             color: isSelected
                                                 ? Colors.white
-                                                : AppColors.secondaryText,
+                                                : context
+                                                      .assessmentColors
+                                                      .secondaryText,
                                           ),
                                         ),
                                       ],
@@ -698,7 +701,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Skip learner option
                   Center(
@@ -708,8 +711,8 @@ class _AssessmentMathState extends State<AssessmentMath> {
                         provider.hasNextLearner
                             ? 'Skip this learner'
                             : 'Skip & exit',
-                        style: const TextStyle(
-                          color: AppColors.secondaryText,
+                        style: TextStyle(
+                          color: context.assessmentColors.secondaryText,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -722,9 +725,9 @@ class _AssessmentMathState extends State<AssessmentMath> {
 
             // Bottom Save & Next Button
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: BoxDecoration(
+                color: context.assessmentColors.surface,
                 border: Border(top: BorderSide(color: border)),
               ),
               child: SizedBox(
@@ -740,7 +743,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                     elevation: 0,
                   ),
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
@@ -752,7 +755,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                           provider.hasNextLearner
                               ? 'Save & next student'
                               : 'Finish assessment',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
