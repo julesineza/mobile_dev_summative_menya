@@ -9,6 +9,7 @@ import '../../models/enums.dart';
 import '../../models/student.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/student_widgets.dart';
+import '../../core/constants/student_colors.dart';
 
 class ClassProgressScreen extends StatefulWidget {
   const ClassProgressScreen({super.key});
@@ -264,7 +265,7 @@ class _SubjectBar extends StatelessWidget {
         : pct >= 70
         ? AppColors.button
         : pct >= 50
-        ? AppColors.watch
+        ? StudentColors.watch
         : AppColors.warningStroke;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

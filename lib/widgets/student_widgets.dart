@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/colors.dart';
 import '../models/enums.dart';
 import '../models/student.dart';
+import '../core/constants/student_colors.dart';
 
 extension SupportStatusUi on SupportStatus {
   String get label => switch (this) {
@@ -12,12 +13,12 @@ extension SupportStatusUi on SupportStatus {
   };
   Color get color => switch (this) {
     SupportStatus.onTrack => AppColors.button,
-    SupportStatus.watch => AppColors.watch,
+    SupportStatus.watch => StudentColors.watch,
     SupportStatus.needsSupport => AppColors.warningStroke,
   };
   Color get fill => switch (this) {
     SupportStatus.onTrack => AppColors.primarySoft,
-    SupportStatus.watch => AppColors.watchFill,
+    SupportStatus.watch => StudentColors.watchFill,
     SupportStatus.needsSupport => AppColors.warningFill,
   };
 }
@@ -30,7 +31,7 @@ extension ResponseLevelUi on ResponseLevel {
   };
   Color get color => switch (this) {
     ResponseLevel.struggling => AppColors.warningStroke,
-    ResponseLevel.developing => AppColors.watch,
+    ResponseLevel.developing => StudentColors.watch,
     ResponseLevel.proficient => AppColors.button,
   };
 }
@@ -146,7 +147,7 @@ class StatusBadge extends StatelessWidget {
   );
 }
 
-/// "All (45)" / "Needs Support (8)" / "Watch (5)"
+/// Filter pill used in roster filter bar.
 class FilterPill extends StatelessWidget {
   const FilterPill({
     super.key,
@@ -185,7 +186,7 @@ class FilterPill extends StatelessWidget {
   }
 }
 
-/// One roster row.
+// Roster row card, with avatar, name, subtitle, and chevron.
 class StudentRow extends StatelessWidget {
   const StudentRow({
     super.key,

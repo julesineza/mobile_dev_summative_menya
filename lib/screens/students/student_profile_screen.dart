@@ -10,6 +10,7 @@ import '../../models/assessment_result.dart';
 import '../../models/enums.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/student_widgets.dart';
+import '../../core/constants/student_colors.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key, required this.studentId});
@@ -56,7 +57,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           child: SizedBox(
             height: 52,
             child: FilledButton.icon(
-              onPressed: () => context.push(AppRoutes.assess, extra: s),
+              onPressed: () => context.push('/assess', extra: s),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.button,
                 foregroundColor: AppColors.onButton,
@@ -202,13 +203,15 @@ class _SubjectCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isReading ? AppColors.primarySoft : AppColors.watchFill,
+              color: isReading
+                  ? AppColors.primarySoft
+                  : StudentColors.watchFill,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               isReading ? Icons.menu_book_outlined : Icons.calculate_outlined,
               size: 20,
-              color: isReading ? AppColors.button : AppColors.watch,
+              color: isReading ? AppColors.button : StudentColors.watch,
             ),
           ),
           const SizedBox(width: 12),
