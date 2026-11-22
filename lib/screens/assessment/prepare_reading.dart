@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
@@ -14,7 +15,8 @@ class PrepareReadingPage extends StatelessWidget {
     final provider = context.watch<AssessmentProvider>();
     final learner = provider.currentLearner;
     final test = provider.test;
-    final passage = test?.passageText ??
+    final passage =
+        test?.passageText ??
         'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.';
     final wordCount = passage
         .trim()
@@ -37,7 +39,7 @@ class PrepareReadingPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
@@ -80,7 +82,11 @@ class PrepareReadingPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text(
                     'Place the reading passage in front of the learner before starting the timer.',
-                    style: TextStyle(fontSize: 15, color: Colors.black54, height: 1.4),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black54,
+                      height: 1.4,
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -131,7 +137,10 @@ class PrepareReadingPage extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primarySoft,
                               borderRadius: BorderRadius.circular(12),
@@ -217,7 +226,11 @@ class PrepareReadingPage extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.lightbulb_outline, color: green, size: 20),
+                            Icon(
+                              Icons.lightbulb_outline,
+                              color: green,
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'Testing instructions',
@@ -256,7 +269,7 @@ class PrepareReadingPage extends StatelessWidget {
                 height: 54,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).pushNamed(AppRoutes.takeReading);
+                    context.push(AppRoutes.takeReading);
                   },
                   icon: const Icon(Icons.play_arrow, color: Colors.white),
                   label: const Text(

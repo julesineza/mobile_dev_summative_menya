@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
@@ -43,14 +44,16 @@ class _AssessmentReadingState extends State<AssessmentReading> {
       if (hasNext) {
         await provider.moveToNextLearner();
         if (!mounted) return;
-        Navigator.of(context).pushReplacementNamed(AppRoutes.prepareReading);
+        context.pushReplacement(AppRoutes.prepareReading);
       } else {
         await provider.moveToNextLearner();
         if (!mounted) return;
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        context.go(AppRoutes.assess);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Assessment completed successfully for all learners!'),
+            content: Text(
+              'Assessment completed successfully for all learners!',
+            ),
             backgroundColor: AppColors.button,
           ),
         );
@@ -73,9 +76,9 @@ class _AssessmentReadingState extends State<AssessmentReading> {
     final provider = context.read<AssessmentProvider>();
     if (provider.hasNextLearner) {
       provider.skipCurrentLearner();
-      Navigator.of(context).pushReplacementNamed(AppRoutes.prepareReading);
+      context.pushReplacement(AppRoutes.prepareReading);
     } else {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      context.go(AppRoutes.assess);
     }
   }
 
@@ -106,7 +109,7 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
@@ -184,7 +187,10 @@ class _AssessmentReadingState extends State<AssessmentReading> {
 
                   // Metrics Cards
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -196,21 +202,39 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                         _MetricItem(
                           value: '${accuracy.toStringAsFixed(0)}%',
                           label: 'Accuracy',
-                          color: accuracy >= 90 ? green : (accuracy >= 70 ? Colors.amber.shade800 : AppColors.warningStroke),
+                          color: accuracy >= 90
+                              ? green
+                              : (accuracy >= 70
+                                    ? Colors.amber.shade800
+                                    : AppColors.warningStroke),
                         ),
-                        Container(width: 1, height: 36, color: AppColors.divider),
+                        Container(
+                          width: 1,
+                          height: 36,
+                          color: AppColors.divider,
+                        ),
                         _MetricItem(
                           value: '${wpm.toStringAsFixed(0)}',
                           label: 'WPM',
                           color: AppColors.text,
                         ),
-                        Container(width: 1, height: 36, color: AppColors.divider),
+                        Container(
+                          width: 1,
+                          height: 36,
+                          color: AppColors.divider,
+                        ),
                         _MetricItem(
                           value: '$errorCount',
                           label: 'Mistakes',
-                          color: errorCount > 0 ? AppColors.warningStroke : green,
+                          color: errorCount > 0
+                              ? AppColors.warningStroke
+                              : green,
                         ),
-                        Container(width: 1, height: 36, color: AppColors.divider),
+                        Container(
+                          width: 1,
+                          height: 36,
+                          color: AppColors.divider,
+                        ),
                         _MetricItem(
                           value: '${durationSec}s',
                           label: 'Time',
@@ -271,11 +295,17 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                             runSpacing: 6,
                             children: provider.errorWords.map((word) {
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.warningFill,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppColors.warningStroke, width: 0.8),
+                                  border: Border.all(
+                                    color: AppColors.warningStroke,
+                                    width: 0.8,
+                                  ),
                                 ),
                                 child: Text(
                                   word,
@@ -309,7 +339,10 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primarySoft,
                           borderRadius: BorderRadius.circular(8),
@@ -341,7 +374,9 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               decoration: BoxDecoration(
-                                color: selected ? AppColors.primarySoft : Colors.white,
+                                color: selected
+                                    ? AppColors.primarySoft
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: selected ? green : AppColors.border,
@@ -364,16 +399,23 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                                     _responseLevelLabel(level),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                                      fontWeight: selected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
                                       color: selected ? green : Colors.black87,
                                     ),
                                   ),
                                   if (isSuggested) ...[
                                     const SizedBox(height: 4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: selected ? Colors.white : AppColors.primarySoft,
+                                        color: selected
+                                            ? Colors.white
+                                            : AppColors.primarySoft,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: const Text(
@@ -462,7 +504,11 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                                const Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ],
                             ),
                     ),
@@ -527,10 +573,7 @@ class _MetricItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black54,
-          ),
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
         ),
       ],
     );

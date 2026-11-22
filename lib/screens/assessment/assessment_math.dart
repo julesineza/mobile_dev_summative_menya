@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
@@ -89,10 +90,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
     final total = questions.length;
 
     // Convert map to list of answers matching questions order
-    final answerList = List.generate(
-      total,
-      (i) => _answers[i] ?? '',
-    );
+    final answerList = List.generate(total, (i) => _answers[i] ?? '');
     provider.setMathAnswers(answerList);
 
     // Calculate score & level
@@ -137,7 +135,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
       } else {
         await provider.moveToNextLearner();
         if (!mounted) return;
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        context.go(AppRoutes.assess);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Math assessment completed for all learners!'),
@@ -170,7 +168,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
       });
       _startTimer();
     } else {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      context.go(AppRoutes.assess);
     }
   }
 
@@ -213,7 +211,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
@@ -366,8 +364,12 @@ class _AssessmentMathState extends State<AssessmentMath> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
-                                color: _isTimerRunning ? AppColors.text : Colors.black45,
-                                fontFeatures: const [FontFeature.tabularFigures()],
+                                color: _isTimerRunning
+                                    ? AppColors.text
+                                    : Colors.black45,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
                               ),
                             ),
                           ],
@@ -452,9 +454,11 @@ class _AssessmentMathState extends State<AssessmentMath> {
                     ...List.generate(questions.length, (i) {
                       final q = questions[i];
                       final recordedAnswer = _answers[i];
-                      final isAnswered = recordedAnswer != null &&
+                      final isAnswered =
+                          recordedAnswer != null &&
                           recordedAnswer.trim().isNotEmpty;
-                      final isCorrect = isAnswered &&
+                      final isCorrect =
+                          isAnswered &&
                           recordedAnswer.trim().toLowerCase() ==
                               q.answer.trim().toLowerCase();
 
@@ -468,8 +472,10 @@ class _AssessmentMathState extends State<AssessmentMath> {
                             color: !isAnswered
                                 ? border
                                 : isCorrect
-                                    ? green.withValues(alpha: 0.6)
-                                    : AppColors.warningStroke.withValues(alpha: 0.6),
+                                ? green.withValues(alpha: 0.6)
+                                : AppColors.warningStroke.withValues(
+                                    alpha: 0.6,
+                                  ),
                             width: isAnswered ? 1.5 : 1.0,
                           ),
                         ),
@@ -557,12 +563,12 @@ class _AssessmentMathState extends State<AssessmentMath> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor:
                                           (isAnswered && !isCorrect)
-                                              ? AppColors.warningStroke
-                                              : AppColors.background,
+                                          ? AppColors.warningStroke
+                                          : AppColors.background,
                                       foregroundColor:
                                           (isAnswered && !isCorrect)
-                                              ? Colors.white
-                                              : AppColors.text,
+                                          ? Colors.white
+                                          : AppColors.text,
                                       elevation: 0,
                                       side: BorderSide(
                                         color: (isAnswered && !isCorrect)
@@ -719,9 +725,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: border),
-                ),
+                border: Border(top: BorderSide(color: border)),
               ),
               child: SizedBox(
                 width: double.infinity,
@@ -764,8 +768,8 @@ class _AssessmentMathState extends State<AssessmentMath> {
   }
 
   String _levelName(ResponseLevel level) => switch (level) {
-        ResponseLevel.struggling => 'Struggling',
-        ResponseLevel.developing => 'Developing',
-        ResponseLevel.proficient => 'Proficient',
-      };
+    ResponseLevel.struggling => 'Struggling',
+    ResponseLevel.developing => 'Developing',
+    ResponseLevel.proficient => 'Proficient',
+  };
 }

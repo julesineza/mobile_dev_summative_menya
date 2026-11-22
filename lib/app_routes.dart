@@ -1,6 +1,15 @@
 import 'package:go_router/go_router.dart';
 
 import 'providers/auth_provider.dart';
+import 'screens/assessment/assessment_math.dart';
+import 'screens/assessment/assessment_reading.dart';
+import 'screens/assessment/prepare_reading.dart';
+import 'screens/assessment/select_class.dart';
+import 'screens/assessment/select_learners.dart';
+import 'screens/assessment/setup_math_test.dart';
+import 'screens/assessment/setup_reading_test.dart';
+import 'screens/assessment/start_assessment.dart';
+import 'screens/assessment/take_reading.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -15,17 +24,6 @@ import 'widgets/placeholder_screen.dart';
 
 /// All route paths in one place (lib/app_routes.dart). Add yours via PR.
 
-import 'package:flutter/material.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/assessment_reading.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/prepare_reading.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/setup_math_test.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/setup_reading_test.dart';
-import '/screens/assessment/start_assessment.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/assessment_math.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/select_learners.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/select_class.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/take_reading.dart';
-
 class AppRoutes {
   static const splash = '/splash'; // Member 1
   static const login = '/login';
@@ -38,11 +36,11 @@ class AppRoutes {
   static const classes = '/settings/classes'; // Member 1
   static const students = '/students';
   static const studentProfile = '/students/:id';
-  static const start_assessment = '/assess';
+  static const assess = '/assess';
   static const assessReading = '/assess/reading';
   static const assessMath = '/assess/math';
   static const prepareReading = '/assess/reading/prepare';
-  static const takeReading = '/assess/reading/take';
+  static const takeReading = '/assess/reading/prepare/take';
   static const selectLearners = '/assess/select-learners';
   static const selectClass = '/assess/select-class';
   static const setupReading = '/assess/setup-reading';
@@ -50,18 +48,6 @@ class AppRoutes {
   static const progress = '/progress';
   static const review = '/review/:resultId';
   static const supportPlan = '/support-plan/:studentId';
-
-  static final Map<String, WidgetBuilder> routes = {
-    start_assessment: (context) => const StartAssessment(),
-    assessReading: (context) => const AssessmentReading(),
-    assessMath: (context) => const AssessmentMath(),
-    prepareReading: (context) => const PrepareReadingPage(),
-    takeReading: (context) => const ReadingPausedPage(),
-    selectLearners: (context) => const SelectLearnersPage(),
-    selectClass: (context) => const SelectClassesPage(),
-    setupReading: (context) => const TestSetupReadingPage(),
-    setupMath: (context) => const TestSetupMathPage(),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -90,18 +76,38 @@ List<RouteBase> get studentRoutes => [
 List<RouteBase> get assessmentRoutes => [
   GoRoute(
     path: AppRoutes.assess,
-    builder: (_, _) => const PlaceholderScreen('Start Assessment (Member 3)'),
+    builder: (_, _) => const StartAssessment(),
     routes: [
       GoRoute(
         path: 'reading',
-        builder: (_, _) =>
-            const PlaceholderScreen('Reading assessment (Member 3)'),
+        builder: (_, _) => const AssessmentReading(),
+        routes: [
+          GoRoute(
+            path: 'prepare',
+            builder: (_, _) => const PrepareReadingPage(),
+            routes: [
+              GoRoute(
+                path: 'take',
+                builder: (_, _) => const ReadingPausedPage(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(path: 'math', builder: (_, _) => const AssessmentMath()),
+      GoRoute(
+        path: 'select-learners',
+        builder: (_, _) => const SelectLearnersPage(),
       ),
       GoRoute(
-        path: 'math',
-        builder: (_, _) =>
-            const PlaceholderScreen('Math assessment (Member 3)'),
+        path: 'select-class',
+        builder: (_, _) => const SelectClassesPage(),
       ),
+      GoRoute(
+        path: 'setup-reading',
+        builder: (_, _) => const TestSetupReadingPage(),
+      ),
+      GoRoute(path: 'setup-math', builder: (_, _) => const TestSetupMathPage()),
     ],
   ),
 ];
