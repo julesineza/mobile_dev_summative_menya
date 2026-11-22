@@ -54,7 +54,9 @@ class DashboardProvider extends ChangeNotifier {
   /// Called by ProxyProvider whenever the selected class changes.
   /// Must not notify synchronously (it runs during the widget build).
   void watchClass(SchoolClass? schoolClass) {
-    if (schoolClass?.id == _classId) return;
+    final hasError =
+        summaryState == ViewState.error || recentState == ViewState.error;
+    if (schoolClass?.id == _classId && !hasError) return;
     _classId = schoolClass?.id;
 
     _studentsSub?.cancel();
@@ -91,7 +93,8 @@ class DashboardProvider extends ChangeNotifier {
             recentState = ViewState.success;
             notifyListeners();
           },
-          onError: (_) {
+          onError: (Object e) {
+            debugPrint('[DashboardProvider] recent checks error: $e');
             recentState = ViewState.error;
             notifyListeners();
           },
