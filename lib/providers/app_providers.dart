@@ -88,7 +88,9 @@ List<SingleChildWidget> get studentProviders => [
     create: (_) => StudentProvider(StudentService()),
     update: (_, classes, previous) {
       final c = classes.selectedClass;
-      if (c != null) previous!.listenToClass(c.id, className: c.name);
+      if (c != null) {
+        previous!.listenToClass(c.id, schoolId: c.schoolId, className: c.name);
+      }
       return previous!;
     },
   ),

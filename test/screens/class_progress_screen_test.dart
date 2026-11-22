@@ -31,6 +31,8 @@ void main() {
     controller = StreamController<List<Student>>();
     when(() => service.streamStudents('c1'))
         .thenAnswer((_) => controller.stream);
+    when(() => service.streamClassResults(any()))
+        .thenAnswer((_) => const Stream.empty());
     provider = StudentProvider(service);
   });
 
