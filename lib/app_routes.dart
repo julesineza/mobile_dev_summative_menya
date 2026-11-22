@@ -1,6 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'providers/auth_provider.dart';
+import 'screens/assessment/assessment_math.dart';
+import 'screens/assessment/assessment_reading.dart';
+import 'screens/assessment/prepare_reading.dart';
+import 'screens/assessment/select_class.dart';
+import 'screens/assessment/select_learners.dart';
+import 'screens/assessment/setup_math_test.dart';
+import 'screens/assessment/setup_reading_test.dart';
+import 'screens/assessment/start_assessment.dart';
+import 'screens/assessment/take_reading.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -14,18 +24,6 @@ import 'widgets/app_shell.dart';
 import 'widgets/placeholder_screen.dart';
 
 /// All route paths in one place (lib/app_routes.dart). Add yours via PR.
-
-import 'package:flutter/material.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/assessment_reading.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/prepare_reading.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/setup_math_test.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/setup_reading_test.dart';
-import '/screens/assessment/start_assessment.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/assessment_math.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/select_learners.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/select_class.dart';
-import 'package:mobile_dev_summative_menya/screens/assessment/take_reading.dart';
-
 class AppRoutes {
   static const splash = '/splash'; // Member 1
   static const login = '/login';
@@ -38,7 +36,10 @@ class AppRoutes {
   static const classes = '/settings/classes'; // Member 1
   static const students = '/students';
   static const studentProfile = '/students/:id';
-  static const start_assessment = '/assess';
+  static const assess = '/assess';
+  // Member 3's name for the same route; kept so his screens keep compiling.
+  // ignore: constant_identifier_names
+  static const start_assessment = assess;
   static const assessReading = '/assess/reading';
   static const assessMath = '/assess/math';
   static const prepareReading = '/assess/reading/prepare';

@@ -45,25 +45,27 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   void _load() {
-    if (_prefs != null) {
-      final themeName = _prefs!.getString(themeKey);
+    final prefs = _prefs;
+    if (prefs != null) {
+      final themeName = prefs.getString(themeKey);
       _themeMode = ThemeMode.values.firstWhere(
         (m) => m.name == themeName,
-        orElse: () => ThemeMode.system,
+        orElse: () => ThemeMode.light,
       );
-      _notificationsEnabled = _prefs!.getBool(notificationsKey) ?? true;
-      _rememberedEmail = _prefs!.getString(emailKey) ?? '';
-      _selectedClassId = _prefs!.getString(classKey);
-      _activeClass = _prefs!.getString(PreferencesService.keyActiveClass) ??
+      _notificationsEnabled = prefs.getBool(notificationsKey) ?? true;
+      _rememberedEmail = prefs.getString(emailKey) ?? '';
+      _selectedClassId = prefs.getString(classKey);
+      _activeClass =
+          prefs.getString(PreferencesService.keyActiveClass) ??
           _selectedClassId ??
           'P3-A';
-      _timerMode = _prefs!.getString(PreferencesService.keyTimerMode) ??
-          'count_up';
+      _timerMode =
+          prefs.getString(PreferencesService.keyTimerMode) ?? 'count_up';
       _preferredLanguage =
-          _prefs!.getString(PreferencesService.keyPreferredLanguage) ??
+          prefs.getString(PreferencesService.keyPreferredLanguage) ??
           'English';
       _hapticFeedback =
-          _prefs!.getBool(PreferencesService.keyHapticFeedback) ?? true;
+          prefs.getBool(PreferencesService.keyHapticFeedback) ?? true;
     } else if (_service != null) {
       _themeMode = _service!.themeMode;
       _activeClass = _service!.activeClass;
@@ -74,7 +76,7 @@ class SettingsProvider extends ChangeNotifier {
       _rememberedEmail = '';
       _selectedClassId = null;
     } else {
-      _themeMode = ThemeMode.system;
+      _themeMode = ThemeMode.light;
       _notificationsEnabled = true;
       _rememberedEmail = '';
       _selectedClassId = null;
