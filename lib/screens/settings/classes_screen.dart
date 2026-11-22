@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../app_routes.dart';
 import '../../core/theme/app_palette.dart';
 import '../../core/view_state.dart';
 import '../../models/school_class.dart';
@@ -100,7 +102,12 @@ class ClassesScreen extends StatelessWidget {
                   onTap: () => classes.select(schoolClass.id),
                   trailing: PopupMenuButton<String>(
                     onSelected: (action) {
-                      if (action == 'edit') {
+                      if (action == 'students') {
+                        context.push(
+                          '${AppRoutes.settings}/classes/${schoolClass.id}/students',
+                          extra: schoolClass,
+                        );
+                      } else if (action == 'edit') {
                         showDialog<void>(
                           context: context,
                           builder: (_) => ClassFormDialog(
@@ -113,6 +120,7 @@ class ClassesScreen extends StatelessWidget {
                       }
                     },
                     itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'students', child: Text('Students')),
                       PopupMenuItem(value: 'edit', child: Text('Edit')),
                       PopupMenuItem(value: 'delete', child: Text('Delete')),
                     ],
