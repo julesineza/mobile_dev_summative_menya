@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
@@ -83,7 +84,7 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
       errorWords: _errorIndexes.map((index) => words[index]).toList(),
       durationSec: _elapsedSeconds,
     );
-    Navigator.of(context).pushReplacementNamed(AppRoutes.assessReading);
+    context.pushReplacement(AppRoutes.assessReading);
   }
 
   @override
@@ -98,7 +99,9 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
     final wordCount = words.length;
     final errors = _errorIndexes.length;
     final correctWords = (wordCount - errors).clamp(0, wordCount);
-    final accuracyPercent = wordCount > 0 ? (correctWords / wordCount * 100) : 0.0;
+    final accuracyPercent = wordCount > 0
+        ? (correctWords / wordCount * 100)
+        : 0.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -114,7 +117,7 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                   GestureDetector(
                     onTap: () {
                       _pauseTimer();
-                      Navigator.pop(context);
+                      context.pop();
                     },
                     child: const Row(
                       children: [
@@ -133,7 +136,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primarySoft,
                           borderRadius: BorderRadius.circular(8),
@@ -170,7 +176,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                   // Learner Info Card
                   if (learner != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
@@ -222,10 +231,14 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: _isTimerRunning ? AppColors.primarySoft : AppColors.amberSoft,
+                      color: _isTimerRunning
+                          ? AppColors.primarySoft
+                          : AppColors.amberSoft,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _isTimerRunning ? AppColors.primaryBorder : const Color(0xFFFFD54F),
+                        color: _isTimerRunning
+                            ? AppColors.primaryBorder
+                            : const Color(0xFFFFD54F),
                       ),
                     ),
                     child: Row(
@@ -237,17 +250,25 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                             Row(
                               children: [
                                 Icon(
-                                  _isTimerRunning ? Icons.circle : Icons.pause_circle_filled,
+                                  _isTimerRunning
+                                      ? Icons.circle
+                                      : Icons.pause_circle_filled,
                                   size: 13,
-                                  color: _isTimerRunning ? green : AppColors.amberText,
+                                  color: _isTimerRunning
+                                      ? green
+                                      : AppColors.amberText,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _isTimerRunning ? 'TIMER RUNNING' : 'TIMER PAUSED',
+                                  _isTimerRunning
+                                      ? 'TIMER RUNNING'
+                                      : 'TIMER PAUSED',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 12,
-                                    color: _isTimerRunning ? green : AppColors.amberText,
+                                    color: _isTimerRunning
+                                        ? green
+                                        : AppColors.amberText,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -267,7 +288,9 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                         ),
                         // Pause / Resume Toggle Button
                         ElevatedButton.icon(
-                          onPressed: _isTimerRunning ? _pauseTimer : _startTimer,
+                          onPressed: _isTimerRunning
+                              ? _pauseTimer
+                              : _startTimer,
                           icon: Icon(
                             _isTimerRunning ? Icons.pause : Icons.play_arrow,
                             size: 18,
@@ -281,10 +304,14 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _isTimerRunning ? Colors.white : green,
+                            backgroundColor: _isTimerRunning
+                                ? Colors.white
+                                : green,
                             elevation: 0,
                             side: BorderSide(
-                              color: _isTimerRunning ? AppColors.primaryBorder : green,
+                              color: _isTimerRunning
+                                  ? AppColors.primaryBorder
+                                  : green,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -299,7 +326,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                   if (!_isTimerRunning) ...[
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
@@ -307,12 +337,19 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.info_outline, size: 16, color: AppColors.amberText),
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: AppColors.amberText,
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Test is paused. Tap "Resume" when learner continues.',
-                              style: TextStyle(fontSize: 12, color: AppColors.amberText),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.amberText,
+                              ),
                             ),
                           ),
                         ],
@@ -405,7 +442,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
 
                   // Real-time live score card
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -421,16 +461,25 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: errors > 0 ? AppColors.warningStroke : green,
+                                color: errors > 0
+                                    ? AppColors.warningStroke
+                                    : green,
                               ),
                             ),
                             const Text(
                               'Mistakes',
-                              style: TextStyle(fontSize: 12, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
-                        Container(width: 1, height: 30, color: AppColors.divider),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: AppColors.divider,
+                        ),
                         Column(
                           children: [
                             Text(
@@ -443,11 +492,18 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                             ),
                             const Text(
                               'Accuracy',
-                              style: TextStyle(fontSize: 12, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
-                        Container(width: 1, height: 30, color: AppColors.divider),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: AppColors.divider,
+                        ),
                         Column(
                           children: [
                             Text(
@@ -460,7 +516,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                             ),
                             const Text(
                               'Words correct',
-                              style: TextStyle(fontSize: 12, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -491,7 +550,9 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _isTimerRunning ? 'Stop timer & review' : 'Finish & review',
+                        _isTimerRunning
+                            ? 'Stop timer & review'
+                            : 'Finish & review',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -499,7 +560,11 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                      const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ],
                   ),
                 ),

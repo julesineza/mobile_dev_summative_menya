@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_dev_summative_menya/app_routes.dart';
 import 'package:mobile_dev_summative_menya/providers/assessment_provider.dart';
 import 'package:provider/provider.dart';
@@ -60,7 +61,9 @@ class StartAssessment extends StatelessWidget {
                             text: 'Select a subject to begin a quick check. Class ',
                           ),
                           TextSpan(
-                            text: context.watch<AssessmentProvider>().selectedClassName,
+                            text: context
+                                .watch<AssessmentProvider>()
+                                .selectedClassName,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
@@ -73,7 +76,7 @@ class StartAssessment extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).pushNamed(AppRoutes.selectClass);
+                      context.push(AppRoutes.selectClass);
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.button,
@@ -98,9 +101,9 @@ class StartAssessment extends StatelessWidget {
                 iconBackground: const Color(0xFFEAF4EC),
                 onTap: () {
                   context.read<AssessmentProvider>().setSelectedAssessment(
-                        UserChoice.reading,
-                      );
-                  Navigator.of(context).pushNamed(AppRoutes.selectLearners);
+                    UserChoice.reading,
+                  );
+                  context.push(AppRoutes.selectLearners);
                 },
               ),
 
@@ -115,9 +118,9 @@ class StartAssessment extends StatelessWidget {
                 iconBackground: const Color(0xFFFFF1E7),
                 onTap: () {
                   context.read<AssessmentProvider>().setSelectedAssessment(
-                        UserChoice.math,
-                      );
-                  Navigator.of(context).pushNamed(AppRoutes.selectLearners);
+                    UserChoice.math,
+                  );
+                  context.push(AppRoutes.selectLearners);
                 },
               ),
 
@@ -173,7 +176,7 @@ class StartAssessment extends StatelessWidget {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pushNamed(AppRoutes.setupReading);
+                        context.push(AppRoutes.setupReading);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.button,

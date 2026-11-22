@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
@@ -12,8 +13,8 @@ class _MathQuestionItem {
   final TextEditingController answer;
 
   _MathQuestionItem({String p = '', String a = ''})
-      : prompt = TextEditingController(text: p),
-        answer = TextEditingController(text: a);
+    : prompt = TextEditingController(text: p),
+      answer = TextEditingController(text: a);
 
   void dispose() {
     prompt.dispose();
@@ -76,7 +77,8 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
     final validQuestions = _questions
         .where(
           (q) =>
-              q.prompt.text.trim().isNotEmpty && q.answer.text.trim().isNotEmpty,
+              q.prompt.text.trim().isNotEmpty &&
+              q.answer.text.trim().isNotEmpty,
         )
         .map(
           (q) => TestQuestion(
@@ -118,14 +120,14 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
       );
 
       // Navigate directly to select learners with this new test
-      Navigator.of(context).pushReplacementNamed(AppRoutes.selectLearners);
+      context.pushReplacement(AppRoutes.selectLearners);
     } catch (error) {
       debugPrint('[SetupMath] save error: $error');
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save test: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not save test: $error')));
       }
     }
   }
@@ -147,7 +149,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
@@ -182,7 +184,10 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                   const SizedBox(height: 8),
                   const Text(
                     'Choose what learners will read or solve.',
-                    style: TextStyle(fontSize: 15, color: AppColors.secondaryText),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -198,8 +203,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              Navigator.of(context)
-                                  .pushReplacementNamed(AppRoutes.setupReading);
+                              context.pushReplacement(AppRoutes.setupReading);
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(vertical: 10),
@@ -405,10 +409,13 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                                   borderSide: const BorderSide(color: border),
                                 ),
                                 focusedBorder: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(12)),
-                                  borderSide:
-                                      BorderSide(color: green, width: 1.5),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(12),
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: green,
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -422,8 +429,9 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: Colors.white,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(color: border),
@@ -433,10 +441,13 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                                   borderSide: const BorderSide(color: border),
                                 ),
                                 focusedBorder: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(12)),
-                                  borderSide:
-                                      BorderSide(color: green, width: 1.5),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(12),
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: green,
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -469,9 +480,8 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                     width: double.infinity,
                     height: 48,
                     child: TextButton.icon(
-                      onPressed: () => setState(
-                        () => _questions.add(_MathQuestionItem()),
-                      ),
+                      onPressed: () =>
+                          setState(() => _questions.add(_MathQuestionItem())),
                       icon: const Icon(Icons.add, color: green, size: 20),
                       label: const Text(
                         'Add question',
@@ -501,9 +511,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: border),
-                ),
+                border: Border(top: BorderSide(color: border)),
               ),
               child: SizedBox(
                 width: double.infinity,
