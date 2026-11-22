@@ -25,14 +25,24 @@ List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
   ChangeNotifierProvider<SettingsProvider>(
     create: (context) => SettingsProvider(prefs)..attachService(prefs),
   ),
-  ChangeNotifierProxyProvider<SettingsProvider, AssessmentProvider>(
+  ChangeNotifierProxyProvider2<
+    SettingsProvider,
+    ClassProvider,
+    AssessmentProvider
+  >(
     create: (_) => AssessmentProvider(initialClassName: prefs.activeClass),
-    update: (_, settings, previous) {
-      // Keep provider in sync when the active class changes (e.g. user picks a new class).
+    update: (_, settings, classes, previous) {
       final provider =
           previous ??
           AssessmentProvider(initialClassName: settings.activeClass);
-      if (provider.selectedClassName != settings.activeClass &&
+      final selected = classes.selectedClass;
+      if (selected != null) {
+        provider.syncFromClass(
+          id: selected.id,
+          name: selected.name,
+          schoolId: selected.schoolId,
+        );
+      } else if (provider.selectedClassName != settings.activeClass &&
           settings.activeClass.isNotEmpty) {
         provider.syncClassFromSettings(settings.activeClass);
       }

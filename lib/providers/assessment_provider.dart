@@ -31,7 +31,7 @@ class AssessmentLearner {
 
 class AssessmentProvider extends ChangeNotifier {
   AssessmentProvider({AssessmentService? service, String? initialClassName})
-      : _service = service ?? AssessmentService() {
+    : _service = service ?? AssessmentService() {
     if (initialClassName != null && initialClassName.isNotEmpty) {
       _selectedClassName = initialClassName;
       _selectedClassId = _resolveClassId(initialClassName);
@@ -46,6 +46,7 @@ class AssessmentProvider extends ChangeNotifier {
   UserChoice _selectedAssessment = UserChoice.none;
   String _selectedClassName = 'P3-A';
   String _selectedClassId = fallbackClassId;
+  String _selectedSchoolId = fallbackSchoolId;
   AssessmentTest? _test;
   AssessmentSession? _session;
   List<AssessmentLearner> _learners = const [];
@@ -60,6 +61,7 @@ class AssessmentProvider extends ChangeNotifier {
   UserChoice get selectedChoice => _selectedAssessment;
   String get selectedClassName => _selectedClassName;
   String get selectedClassId => _selectedClassId;
+  String get selectedSchoolId => _selectedSchoolId;
   AssessmentTest? get test => _test;
   AssessmentSession? get session => _session;
   List<AssessmentLearner> get learners => _learners;
@@ -90,6 +92,21 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void syncFromClass({
+    required String id,
+    required String name,
+    required String schoolId,
+  }) {
+    if (id != _selectedClassId) {
+      _learners = const [];
+      _currentLearnerIndex = 0;
+      _session = null;
+    }
+    _selectedClassId = id;
+    _selectedClassName = name;
+    _selectedSchoolId = schoolId;
+  }
+
   void setSelectedAssessment(UserChoice assessment) {
     _selectedAssessment = assessment;
     _test = null;
@@ -110,7 +127,7 @@ class AssessmentProvider extends ChangeNotifier {
 
     final grade = _parseGrade(_selectedClassName);
     _test = await _service.getTest(
-      schoolId: fallbackSchoolId,
+      schoolId: _selectedSchoolId,
       subject: subject,
       grade: grade,
     );
@@ -124,10 +141,10 @@ class AssessmentProvider extends ChangeNotifier {
     Language language = Language.english,
     String? passageText,
     List<TestQuestion> questions = const [],
-    String schoolId = fallbackSchoolId,
+    String? schoolId,
   }) async {
     final test = await _service.createTest(
-      schoolId: schoolId,
+      schoolId: schoolId ?? _selectedSchoolId,
       createdBy: fallbackTeacherId,
       title: title,
       subject: subject,
@@ -177,7 +194,7 @@ class AssessmentProvider extends ChangeNotifier {
   Future<List<AssessmentLearner>> loadLearners() async {
     final students = await _service.getStudents(
       classId: _selectedClassId,
-      schoolId: fallbackSchoolId,
+      schoolId: _selectedSchoolId,
     );
     return students
         .map(
@@ -202,7 +219,7 @@ class AssessmentProvider extends ChangeNotifier {
     final studentIds = _learners.map((learner) => learner.id).toList();
 
     _session = await _service.createSession(
-      schoolId: currentLearner?.schoolId ?? fallbackSchoolId,
+      schoolId: currentLearner?.schoolId ?? _selectedSchoolId,
       classId: currentLearner?.classId ?? _selectedClassId,
       teacherId: fallbackTeacherId,
       test: activeTest,
