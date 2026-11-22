@@ -34,7 +34,7 @@ class AuthProvider extends ChangeNotifier {
   bool get initialized => _initialized;
   User? get firebaseUser => _firebaseUser;
   AppUser? get profile => _profile;
-  bool get isSignedIn => _firebaseUser != null;
+  bool get isSignedIn => _firebaseUser != null && !_firebaseUser!.isAnonymous;
   bool get isEmailVerified => _firebaseUser?.emailVerified ?? false;
   bool get isLoading => state == ViewState.loading;
 
@@ -77,7 +77,7 @@ class AuthProvider extends ChangeNotifier {
     } on Failure catch (e) {
       state = ViewState.error;
       errorMessage = e.message;
-       } catch (e) {
+    } catch (e) {
       debugPrint('Auth error: $e');
       state = ViewState.error;
       errorMessage = 'Something went wrong. Please try again.';
