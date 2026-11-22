@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_dev_summative_menya/app_routes.dart';
 import 'package:mobile_dev_summative_menya/providers/assessment_provider.dart';
 import 'package:provider/provider.dart';
@@ -93,7 +94,8 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
   }
 
   int get _selectedCount => _learners.where((e) => e.isSelected).length;
-  bool get _allSelected => _learners.isNotEmpty && _selectedCount == _learners.length;
+  bool get _allSelected =>
+      _learners.isNotEmpty && _selectedCount == _learners.length;
 
   void _toggleAll() {
     setState(() {
@@ -121,7 +123,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
@@ -154,10 +156,10 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _errorMessage != null
-                      ? _buildErrorState(green)
-                      : _learners.isEmpty
-                          ? _buildEmptyState(green)
-                          : _buildLearnerList(green, lightGreen),
+                  ? _buildErrorState(green)
+                  : _learners.isEmpty
+                  ? _buildEmptyState(green)
+                  : _buildLearnerList(green, lightGreen),
             ),
 
             // ── Bottom button ──────────────────────────────────────────────
@@ -172,8 +174,9 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                     onPressed: _selectedCount == 0
                         ? null
                         : () async {
-                            final selected =
-                                _learners.where((e) => e.isSelected).toList();
+                            final selected = _learners
+                                .where((e) => e.isSelected)
+                                .toList();
 
                             final provider = context.read<AssessmentProvider>();
                             provider.setLearners(
@@ -196,9 +199,9 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                             if (!mounted) return;
                             final route =
                                 provider.selectedChoice == UserChoice.reading
-                                    ? AppRoutes.prepareReading
-                                    : AppRoutes.assessMath;
-                            Navigator.of(context).pushNamed(route);
+                                ? AppRoutes.prepareReading
+                                : AppRoutes.assessMath;
+                            context.push(route);
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: green,
@@ -283,7 +286,8 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: GestureDetector(
-              onTap: () => setState(() => learner.isSelected = !learner.isSelected),
+              onTap: () =>
+                  setState(() => learner.isSelected = !learner.isSelected),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 decoration: BoxDecoration(
@@ -294,7 +298,10 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                     width: 1.5,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
                     // Avatar
@@ -309,7 +316,9 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                       child: Text(
                         learner.initials,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.secondaryText,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.secondaryText,
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
                         ),
@@ -353,7 +362,11 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                         ),
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white, size: 18)
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 18,
+                            )
                           : null,
                     ),
                   ],
@@ -388,7 +401,11 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.people_outline, size: 64, color: AppColors.secondaryText),
+            const Icon(
+              Icons.people_outline,
+              size: 64,
+              color: AppColors.secondaryText,
+            ),
             const SizedBox(height: 16),
             const Text(
               'No learners found',
@@ -424,7 +441,11 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off, size: 64, color: AppColors.secondaryText),
+            const Icon(
+              Icons.wifi_off,
+              size: 64,
+              color: AppColors.secondaryText,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Connection issue',
@@ -438,7 +459,10 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
             Text(
               _errorMessage ?? 'Could not load learners.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.secondaryText, height: 1.4),
+              style: const TextStyle(
+                color: AppColors.secondaryText,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(

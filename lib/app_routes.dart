@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'providers/auth_provider.dart';
@@ -37,13 +36,13 @@ class AppRoutes {
   static const students = '/students';
   static const studentProfile = '/students/:id';
   static const assess = '/assess';
-  // Member 3's name for the same route; kept so his screens keep compiling.
+  // Member 3's older name for the same route; kept so nothing breaks.
   // ignore: constant_identifier_names
   static const start_assessment = assess;
   static const assessReading = '/assess/reading';
   static const assessMath = '/assess/math';
   static const prepareReading = '/assess/reading/prepare';
-  static const takeReading = '/assess/reading/take';
+  static const takeReading = '/assess/reading/prepare/take';
   static const selectLearners = '/assess/select-learners';
   static const selectClass = '/assess/select-class';
   static const setupReading = '/assess/setup-reading';
@@ -51,18 +50,6 @@ class AppRoutes {
   static const progress = '/progress';
   static const review = '/review/:resultId';
   static const supportPlan = '/support-plan/:studentId';
-
-  static final Map<String, WidgetBuilder> routes = {
-    start_assessment: (context) => const StartAssessment(),
-    assessReading: (context) => const AssessmentReading(),
-    assessMath: (context) => const AssessmentMath(),
-    prepareReading: (context) => const PrepareReadingPage(),
-    takeReading: (context) => const ReadingPausedPage(),
-    selectLearners: (context) => const SelectLearnersPage(),
-    selectClass: (context) => const SelectClassesPage(),
-    setupReading: (context) => const TestSetupReadingPage(),
-    setupMath: (context) => const TestSetupMathPage(),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -91,18 +78,38 @@ List<RouteBase> get studentRoutes => [
 List<RouteBase> get assessmentRoutes => [
   GoRoute(
     path: AppRoutes.assess,
-    builder: (_, _) => const PlaceholderScreen('Start Assessment (Member 3)'),
+    builder: (_, _) => const StartAssessment(),
     routes: [
       GoRoute(
         path: 'reading',
-        builder: (_, _) =>
-            const PlaceholderScreen('Reading assessment (Member 3)'),
+        builder: (_, _) => const AssessmentReading(),
+        routes: [
+          GoRoute(
+            path: 'prepare',
+            builder: (_, _) => const PrepareReadingPage(),
+            routes: [
+              GoRoute(
+                path: 'take',
+                builder: (_, _) => const ReadingPausedPage(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(path: 'math', builder: (_, _) => const AssessmentMath()),
+      GoRoute(
+        path: 'select-learners',
+        builder: (_, _) => const SelectLearnersPage(),
       ),
       GoRoute(
-        path: 'math',
-        builder: (_, _) =>
-            const PlaceholderScreen('Math assessment (Member 3)'),
+        path: 'select-class',
+        builder: (_, _) => const SelectClassesPage(),
       ),
+      GoRoute(
+        path: 'setup-reading',
+        builder: (_, _) => const TestSetupReadingPage(),
+      ),
+      GoRoute(path: 'setup-math', builder: (_, _) => const TestSetupMathPage()),
     ],
   ),
 ];
