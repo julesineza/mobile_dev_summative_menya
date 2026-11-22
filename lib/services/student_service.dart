@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../models/assessment_result.dart';
 import '../core/firestore_paths.dart';
 import '../models/student.dart';
 
@@ -12,14 +13,31 @@ class StudentService {
   CollectionReference<Map<String, dynamic>> get _col =>
       _db.collection(FirestorePaths.students);
 
-  Stream<List<Student>> streamStudents(String classId) => _col
-      .where('classId', isEqualTo: classId)
-      .snapshots()
-      .map(
-        (snap) =>
-            snap.docs.map(Student.fromFirestore).toList()
-              ..sort((a, b) => a.name.compareTo(b.name)),
-      );
+  /// Firestore rules only allow reading docs from your own school, so the
+  /// query must filter on schoolId too or Firestore rejects the whole query.
+  Stream<List<Student>> streamStudents(String classId, {String? schoolId}) {
+    Query<Map<String, dynamic>> q = _col.where('classId', isEqualTo: classId);
+    if (schoolId != null) q = q.where('schoolId', isEqualTo: schoolId);
+    return q.snapshots().map(
+      (snap) =>
+          snap.docs.map(Student.fromFirestore).toList()
+            ..sort((a, b) => a.name.compareTo(b.name)),
+    );
+  }
+
+  /// Every saved result for one class (used by profile + class progress).
+  Stream<List<AssessmentResult>> streamClassResults(
+    String classId, {
+    String? schoolId,
+  }) {
+    Query<Map<String, dynamic>> q = _db
+        .collection(FirestorePaths.assessmentResults)
+        .where('classId', isEqualTo: classId);
+    if (schoolId != null) q = q.where('schoolId', isEqualTo: schoolId);
+    return q.snapshots().map(
+      (snap) => snap.docs.map(AssessmentResult.fromFirestore).toList(),
+    );
+  }
 
   Stream<Student?> watchStudent(String id) => _col
       .doc(id)

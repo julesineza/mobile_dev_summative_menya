@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
 import '../../core/view_state.dart';
 import '../../models/assessment_result.dart';
@@ -21,14 +20,6 @@ class StudentProfileScreen extends StatefulWidget {
 }
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
-  late final Stream<List<AssessmentResult>> _results;
-
-  @override
-  void initState() {
-    super.initState();
-    _results = Stream.value(const <AssessmentResult>[]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
@@ -48,6 +39,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ),
       );
     }
+
+    final results = p.resultsFor(s.id)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // newest first
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -75,96 +69,84 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ),
       ),
       body: SafeArea(
-        child: StreamBuilder<List<AssessmentResult>>(
-          stream: _results,
-          builder: (context, snap) {
-            final results = [...?snap.data]
-              ..sort(
-                (a, b) => b.createdAt.compareTo(a.createdAt),
-              ); // newest first
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(8, 8, 20, 24),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(8, 8, 20, 24),
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.text,
-                      ),
-                    ),
-                    const Text(
-                      'Student Profile',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.text,
-                      ),
-                    ),
-                  ],
+                IconButton(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.chevron_left, color: AppColors.text),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Column(
-                          children: [
-                            StudentAvatar(name: s.name, radius: 36),
-                            const SizedBox(height: 12),
-                            Text(
-                              s.name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.text,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Class ${p.className} • Roll No. ${s.rollNo}',
-                              style: const TextStyle(
-                                color: AppColors.secondaryText,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            StatusBadge(status: s.status),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _SubjectCard(subject: Subject.reading, results: results),
-                      const SizedBox(height: 12),
-                      _SubjectCard(subject: Subject.math, results: results),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Assessment History',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (results.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Text(
-                            'No checks yet.',
-                            style: TextStyle(color: AppColors.secondaryText),
-                          ),
-                        )
-                      else
-                        for (final r in results) _HistoryRow(result: r),
-                    ],
+                const Text(
+                  'Student Profile',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
                   ),
                 ),
               ],
-            );
-          },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Column(
+                      children: [
+                        StudentAvatar(name: s.name, radius: 36),
+                        const SizedBox(height: 12),
+                        Text(
+                          s.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Class ${p.className} • Roll No. ${s.rollNo}',
+                          style: const TextStyle(
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        StatusBadge(status: s.status),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _SubjectCard(subject: Subject.reading, results: results),
+                  const SizedBox(height: 12),
+                  _SubjectCard(subject: Subject.math, results: results),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Assessment History',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (results.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'No checks yet.',
+                        style: TextStyle(color: AppColors.secondaryText),
+                      ),
+                    )
+                  else
+                    for (final r in results) _HistoryRow(result: r),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

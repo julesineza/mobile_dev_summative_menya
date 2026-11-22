@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mobile_dev_summative_menya/core/view_state.dart';
+import 'package:mobile_dev_summative_menya/models/assessment_result.dart';
 import 'package:mobile_dev_summative_menya/models/enums.dart';
 import 'package:mobile_dev_summative_menya/models/student.dart';
 import 'package:mobile_dev_summative_menya/providers/student_provider.dart';
@@ -36,6 +37,8 @@ void main() {
     controller = StreamController<List<Student>>();
     when(() => service.streamStudents('c1'))
         .thenAnswer((_) => controller.stream);
+    when(() => service.streamClassResults(any()))
+        .thenAnswer((_) => const Stream.empty());
     provider = StudentProvider(service);
   });
 
@@ -168,4 +171,32 @@ void main() {
   test('byId before any data arrives returns null', () {
     expect(provider.byId('1'), isNull);
   });
+
+  test('resultsFor returns only that student\'s results', () async {
+    final results = StreamController<List<AssessmentResult>>();
+    when(() => service.streamClassResults('c1'))
+        .thenAnswer((_) => results.stream);
+
+    provider.listenToClass('c1');
+    results.add([_r('r1', '1'), _r('r2', '2'), _r('r3', '1')]);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(provider.results.length, 3);
+    expect(provider.resultsFor('1').map((r) => r.id), ['r1', 'r3']);
+    await results.close();
+  });
 }
+
+AssessmentResult _r(String id, String studentId) => AssessmentResult(
+  id: id,
+  schoolId: 'sch1',
+  classId: 'c1',
+  sessionId: 'sess1',
+  studentId: studentId,
+  teacherId: 't1',
+  subject: Subject.reading,
+  language: Language.values.first,
+  level: ResponseLevel.proficient,
+  durationSec: 60,
+  createdAt: DateTime(2026, 11, 1),
+);

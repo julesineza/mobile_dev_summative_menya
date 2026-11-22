@@ -19,14 +19,6 @@ class ClassProgressScreen extends StatefulWidget {
 }
 
 class _ClassProgressScreenState extends State<ClassProgressScreen> {
-  late final Stream<List<AssessmentResult>> _results;
-
-  @override
-  void initState() {
-    super.initState();
-    _results = Stream.value(const <AssessmentResult>[]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
@@ -41,127 +33,122 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
     final onTrack = p.countOf(SupportStatus.onTrack);
     final watch = p.countOf(SupportStatus.watch);
     final support = p.countOf(SupportStatus.needsSupport);
+    final results = p.results;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: StreamBuilder<List<AssessmentResult>>(
-          stream: _results,
-          builder: (context, snap) {
-            final results = snap.data ?? const <AssessmentResult>[];
-            return ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text(
-                  'Class Progress',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                MenyaCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const Text(
+              'Class Progress',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 16),
+            MenyaCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Class overview',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.text,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${p.total} students · ${p.className}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.button,
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Class overview',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.text,
+                        ),
                       ),
-                      const SizedBox(height: 14),
-                      _StackedBar(
-                        counts: {
-                          SupportStatus.onTrack: onTrack,
-                          SupportStatus.watch: watch,
-                          SupportStatus.needsSupport: support,
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 6,
-                        children: [
-                          _Legend(
-                            color: SupportStatus.onTrack.color,
-                            text: 'On track ($onTrack)',
-                          ),
-                          _Legend(
-                            color: SupportStatus.watch.color,
-                            text: 'Watch ($watch)',
-                          ),
-                          _Legend(
-                            color: SupportStatus.needsSupport.color,
-                            text: 'Support ($support)',
-                          ),
-                        ],
+                      const Spacer(),
+                      Text(
+                        '${p.total} students · ${p.className}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.button,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Subject Progress',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
+                  const SizedBox(height: 14),
+                  _StackedBar(
+                    counts: {
+                      SupportStatus.onTrack: onTrack,
+                      SupportStatus.watch: watch,
+                      SupportStatus.needsSupport: support,
+                    },
                   ),
-                ),
-                const SizedBox(height: 12),
-                _SubjectBar(
-                  label: 'Reading Fluency',
-                  percent: _competentPercent(results, Subject.reading),
-                ),
-                const SizedBox(height: 14),
-                _SubjectBar(
-                  label: 'Mathematics',
-                  percent: _competentPercent(results, Subject.math),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Students Needing Attention',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (p.needsAttention.isEmpty)
-                  const Text(
-                    'No learners flagged right now.',
-                    style: TextStyle(color: AppColors.secondaryText),
-                  )
-                else
-                  for (final s in p.needsAttention)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _AttentionRow(
-                        student: s,
-                        reason: _reason(results, s.id),
-                        onTap: () => context.push('/students/${s.id}'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 6,
+                    children: [
+                      _Legend(
+                        color: SupportStatus.onTrack.color,
+                        text: 'On track ($onTrack)',
                       ),
-                    ),
-              ],
-            );
-          },
+                      _Legend(
+                        color: SupportStatus.watch.color,
+                        text: 'Watch ($watch)',
+                      ),
+                      _Legend(
+                        color: SupportStatus.needsSupport.color,
+                        text: 'Support ($support)',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Subject Progress',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _SubjectBar(
+              label: 'Reading Fluency',
+              percent: _competentPercent(results, Subject.reading),
+            ),
+            const SizedBox(height: 14),
+            _SubjectBar(
+              label: 'Mathematics',
+              percent: _competentPercent(results, Subject.math),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Students Needing Attention',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (p.needsAttention.isEmpty)
+              const Text(
+                'No learners flagged right now.',
+                style: TextStyle(color: AppColors.secondaryText),
+              )
+            else
+              for (final s in p.needsAttention)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _AttentionRow(
+                    student: s,
+                    reason: _reason(results, s.id),
+                    onTap: () => context.push('/students/${s.id}'),
+                  ),
+                ),
+          ],
         ),
       ),
     );
