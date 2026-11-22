@@ -14,7 +14,7 @@ import '../models/student.dart';
 /// Single source of truth for all assessment, student, and test data via Firebase Firestore.
 class AssessmentService {
   AssessmentService({FirebaseFirestore? firestore})
-      : _customFirestore = firestore;
+    : _customFirestore = firestore;
 
   final FirebaseFirestore? _customFirestore;
 
@@ -38,7 +38,11 @@ class AssessmentService {
     final firestore = _firestore;
     // No Firestore available (e.g. in unit tests) — return a local default so tests pass.
     if (firestore == null) {
-      return _buildDefaultTest(schoolId: schoolId, subject: subject, grade: grade);
+      return _buildDefaultTest(
+        schoolId: schoolId,
+        subject: subject,
+        grade: grade,
+      );
     }
 
     try {
@@ -64,7 +68,9 @@ class AssessmentService {
           .collection(FirestorePaths.tests)
           .doc(defaultTest.id)
           .set(defaultTest.toMap());
-      debugPrint('[AssessmentService] Seeded test ${defaultTest.id} into Firestore');
+      debugPrint(
+        '[AssessmentService] Seeded test ${defaultTest.id} into Firestore',
+      );
       return defaultTest;
     } catch (e) {
       debugPrint('[AssessmentService] getTest error from Firestore: $e');
@@ -88,7 +94,8 @@ class AssessmentService {
     final testDoc = firestore != null
         ? firestore.collection(FirestorePaths.tests).doc()
         : null;
-    final testId = testDoc?.id ?? 'test-${DateTime.now().microsecondsSinceEpoch}';
+    final testId =
+        testDoc?.id ?? 'test-${DateTime.now().microsecondsSinceEpoch}';
 
     final test = AssessmentTest(
       id: testId,
@@ -105,7 +112,9 @@ class AssessmentService {
 
     if (testDoc != null) {
       await testDoc.set(test.toMap());
-      debugPrint('[AssessmentService] Created test directly in Firestore: $testId');
+      debugPrint(
+        '[AssessmentService] Created test directly in Firestore: $testId',
+      );
     }
     return test;
   }
@@ -144,7 +153,7 @@ class AssessmentService {
   /// so that Firestore is immediately populated as the single source of truth.
   Future<List<Student>> getStudents({
     required String classId,
-    String schoolId = 'gs-kigali-central',
+    required String schoolId,
   }) async {
     final firestore = _firestore;
     if (firestore == null) return const [];
@@ -152,6 +161,7 @@ class AssessmentService {
     try {
       final snapshot = await firestore
           .collection(FirestorePaths.students)
+          .where('schoolId', isEqualTo: schoolId)
           .where('classId', isEqualTo: classId)
           .get();
 
@@ -203,7 +213,9 @@ class AssessmentService {
 
     if (sessionDoc != null) {
       await sessionDoc.set(session.toMap());
-      debugPrint('[AssessmentService] Created session directly in Firestore: $sessionId');
+      debugPrint(
+        '[AssessmentService] Created session directly in Firestore: $sessionId',
+      );
     }
     return session;
   }
@@ -262,19 +274,18 @@ class AssessmentService {
       batch.set(resultDoc, result.toMap());
 
       // Update student's status and lastAssessedAt in Firestore
-      final studentRef =
-          firestore.collection(FirestorePaths.students).doc(studentId);
-      batch.set(
-        studentRef,
-        {
-          'status': supportStatusFromLevel(level).name,
-          'lastAssessedAt': Timestamp.fromDate(result.createdAt),
-        },
-        SetOptions(merge: true),
-      );
+      final studentRef = firestore
+          .collection(FirestorePaths.students)
+          .doc(studentId);
+      batch.set(studentRef, {
+        'status': supportStatusFromLevel(level).name,
+        'lastAssessedAt': Timestamp.fromDate(result.createdAt),
+      }, SetOptions(merge: true));
 
       await batch.commit();
-      debugPrint('[AssessmentService] Saved result directly to Firestore: $resultId');
+      debugPrint(
+        '[AssessmentService] Saved result directly to Firestore: $resultId',
+      );
     }
     return result;
   }
@@ -289,9 +300,13 @@ class AssessmentService {
           .collection(FirestorePaths.assessments)
           .doc(sessionId)
           .update({'status': SessionStatus.completed.name});
-      debugPrint('[AssessmentService] Completed session in Firestore: $sessionId');
+      debugPrint(
+        '[AssessmentService] Completed session in Firestore: $sessionId',
+      );
     } catch (error) {
-      debugPrint('[AssessmentService] completeSession error in Firestore: $error');
+      debugPrint(
+        '[AssessmentService] completeSession error in Firestore: $error',
+      );
     }
   }
 
@@ -352,7 +367,9 @@ class AssessmentService {
         '[AssessmentService] Seeded ${seededStudents.length} students into Firestore for class $classId',
       );
     } catch (e) {
-      debugPrint('[AssessmentService] Error seeding students into Firestore: $e');
+      debugPrint(
+        '[AssessmentService] Error seeding students into Firestore: $e',
+      );
     }
 
     return seededStudents;
@@ -389,8 +406,7 @@ class AssessmentService {
       subject: Subject.reading,
       grade: grade,
       createdAt: DateTime.now(),
-      passageText:
-          'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.',
+      passageText: 'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.',
     );
   }
 
@@ -404,7 +420,7 @@ class AssessmentService {
 }
 
 SupportStatus supportStatusFromLevel(ResponseLevel level) => switch (level) {
-      ResponseLevel.struggling => SupportStatus.needsSupport,
-      ResponseLevel.developing => SupportStatus.watch,
-      ResponseLevel.proficient => SupportStatus.onTrack,
-    };
+  ResponseLevel.struggling => SupportStatus.needsSupport,
+  ResponseLevel.developing => SupportStatus.watch,
+  ResponseLevel.proficient => SupportStatus.onTrack,
+};
