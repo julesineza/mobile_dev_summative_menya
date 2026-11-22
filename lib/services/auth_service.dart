@@ -120,9 +120,20 @@ class AuthService {
   }
 
   Future<void> signOut() => guardFirebase(() async {
-    _googleInit ??= _google.initialize();
-    await _googleInit;
-    await _google.signOut();
+    // Check before signing out: currentUser is null afterwards.
+    final usedGoogle =
+        _auth.currentUser?.providerData.any(
+          (p) => p.providerId == 'google.com',
+        ) ??
+        false;
+    // Firebase first so a Google problem can't keep the user signed in.
     await _auth.signOut();
+    if (!usedGoogle) return;
+    // Best effort: a Google error must not undo the Firebase sign-out.
+    try {
+      _googleInit ??= _google.initialize();
+      await _googleInit;
+      await _google.signOut();
+    } catch (_) {}
   });
 }
