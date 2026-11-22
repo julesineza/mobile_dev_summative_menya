@@ -85,6 +85,8 @@ class AssessmentProvider extends ChangeNotifier {
 
   /// Called by [ChangeNotifierProxyProvider] when [SettingsProvider.activeClass] changes.
   /// Updates the selected class without firing a full reset.
+  /// NOTE: only a fallback — the class id is derived from the name here, so
+  /// [syncFromClass] should be used whenever the real [SchoolClass] is known.
   void syncClassFromSettings(String className) {
     if (className.isEmpty || _selectedClassName == className) return;
     _selectedClassName = className;
@@ -92,19 +94,32 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Syncs the selected class using the real Firestore class document.
+  /// Always prefer this over [syncClassFromSettings] so queries use the
+  /// actual class id instead of a name-derived one.
   void syncFromClass({
     required String id,
     required String name,
-    required String schoolId,
+    String? schoolId,
   }) {
-    if (id != _selectedClassId) {
-      _learners = const [];
-      _currentLearnerIndex = 0;
-      _session = null;
+    final schoolChanged =
+        schoolId != null &&
+        schoolId.isNotEmpty &&
+        schoolId != _selectedSchoolId;
+    if (_selectedClassId == id &&
+        _selectedClassName == name &&
+        !schoolChanged) {
+      return;
     }
     _selectedClassId = id;
     _selectedClassName = name;
-    _selectedSchoolId = schoolId;
+    if (schoolId != null && schoolId.isNotEmpty) {
+      _selectedSchoolId = schoolId;
+    }
+    _learners = const [];
+    _currentLearnerIndex = 0;
+    _session = null;
+    notifyListeners();
   }
 
   void setSelectedAssessment(UserChoice assessment) {
@@ -173,9 +188,16 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedClass({required String name, required String id}) {
+  void setSelectedClass({
+    required String name,
+    required String id,
+    String? schoolId,
+  }) {
     _selectedClassName = name;
     _selectedClassId = id;
+    if (schoolId != null && schoolId.isNotEmpty) {
+      _selectedSchoolId = schoolId;
+    }
     _learners = const [];
     _currentLearnerIndex = 0;
     _session = null;

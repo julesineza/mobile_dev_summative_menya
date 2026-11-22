@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import 'models/school_class.dart';
 import 'providers/auth_provider.dart';
 import 'screens/assessment/assessment_math.dart';
 import 'screens/assessment/assessment_reading.dart';
@@ -19,6 +20,7 @@ import 'screens/auth/verify_email_screen.dart';
 import 'screens/dashboard/home_screen.dart';
 import 'screens/settings/classes_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'screens/settings/students_screen.dart';
 import 'screens/students/student_roster_screen.dart';
 import 'screens/students/student_profile_screen.dart';
 import 'screens/progress/class_progress_screen.dart';
@@ -204,6 +206,11 @@ GoRouter createRouter(AuthProvider auth) {
         builder: (_, _) => const SettingsScreen(),
         routes: [
           GoRoute(path: 'classes', builder: (_, _) => const ClassesScreen()),
+          GoRoute(
+            path: 'classes/:classId/students',
+            builder: (_, state) =>
+                StudentsScreen(schoolClass: state.extra! as SchoolClass),
+          ),
         ],
       ),
       ...reviewRoutes,

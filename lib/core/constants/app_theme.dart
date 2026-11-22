@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'colors.dart';
+import '../theme/app_palette.dart';
 
 class AppTheme {
   AppTheme._();
@@ -8,22 +9,24 @@ class AppTheme {
   static const String fontFamily = 'SF Pro Display';
 
   static ThemeData get light {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.button,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: AppColors.button,
-      onPrimary: AppColors.onButton,
-      surface: AppColors.background,
-      onSurface: AppColors.text,
-      error: AppColors.warningStroke,
-      onError: AppColors.onButton,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.button,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.button,
+          onPrimary: AppColors.onButton,
+          surface: AppColors.background,
+          onSurface: AppColors.text,
+          error: AppColors.warningStroke,
+          onError: AppColors.onButton,
+        );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
+      extensions: const [AppPalette.light],
       fontFamily: fontFamily,
       textTheme: const TextTheme(
         bodyLarge: TextStyle(color: AppColors.text),
@@ -66,22 +69,24 @@ class AppTheme {
   }
 
   static ThemeData get dark {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.button,
-      brightness: Brightness.dark,
-    ).copyWith(
-      primary: AppColors.button,
-      onPrimary: Colors.white,
-      surface: const Color(0xFF1E1E1E),
-      onSurface: const Color(0xFFF1F5F9),
-      error: AppColors.warningStroke,
-      onError: Colors.white,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.button,
+          brightness: Brightness.dark,
+        ).copyWith(
+          primary: AppColors.button,
+          onPrimary: Colors.white,
+          surface: const Color(0xFF1E1E1E),
+          onSurface: const Color(0xFFF1F5F9),
+          error: AppColors.warningStroke,
+          onError: Colors.white,
+        );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFF121212),
+      extensions: const [AppPalette.dark],
       fontFamily: fontFamily,
       textTheme: const TextTheme(
         bodyLarge: TextStyle(color: Color(0xFFF1F5F9)),

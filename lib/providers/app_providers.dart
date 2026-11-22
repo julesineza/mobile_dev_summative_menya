@@ -6,13 +6,13 @@ import '../services/auth_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/preferences_service.dart';
 import '../services/school_class_service.dart';
+import '../services/student_service.dart';
 import 'assessment_provider.dart';
 import 'auth_provider.dart';
 import 'class_provider.dart';
 import 'dashboard_provider.dart';
 import 'school_provider.dart';
 import 'settings_provider.dart';
-import '../services/student_service.dart';
 import 'student_provider.dart';
 
 /// Builds the full provider list, wiring both [SharedPreferences] and [PreferencesService]
@@ -32,11 +32,14 @@ List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
   >(
     create: (_) => AssessmentProvider(initialClassName: prefs.activeClass),
     update: (_, settings, classes, previous) {
+      // Keep provider in sync when the active class changes (e.g. user picks a new class).
       final provider =
           previous ??
           AssessmentProvider(initialClassName: settings.activeClass);
       final selected = classes.selectedClass;
       if (selected != null) {
+        // Prefer the real Firestore class document so the class id is the
+        // actual document id, not one derived from the class name.
         provider.syncFromClass(
           id: selected.id,
           name: selected.name,
@@ -93,15 +96,23 @@ List<SingleChildWidget> get authProviders => [
   ),
 ];
 
+/// Student / class analytics providers — owned by Member 2.
 List<SingleChildWidget> get studentProviders => [
   ChangeNotifierProxyProvider<ClassProvider, StudentProvider>(
     create: (_) => StudentProvider(StudentService()),
     update: (_, classes, previous) {
-      final c = classes.selectedClass;
-      if (c != null) {
-        previous!.listenToClass(c.id, schoolId: c.schoolId, className: c.name);
+      final provider = previous!;
+      final selected = classes.selectedClass;
+      if (selected != null) {
+        provider.listenToClass(
+          selected.id,
+          schoolId: selected.schoolId,
+          className: selected.name,
+        );
+      } else {
+        provider.watchClass(null);
       }
-      return previous!;
+      return provider;
     },
   ),
 ];

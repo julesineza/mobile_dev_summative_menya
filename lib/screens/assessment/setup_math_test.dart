@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
 import '../../models/assessment_test.dart';
 import '../../models/enums.dart';
+import '../../models/school_class.dart';
 import '../../providers/assessment_provider.dart';
+import '../../providers/class_provider.dart';
 
 class _MathQuestionItem {
   final TextEditingController prompt;
@@ -65,12 +68,45 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
     return 3;
   }
 
+  List<SchoolClass> get _classItems {
+    final classes = context.watch<ClassProvider>().classes;
+    if (classes.isNotEmpty) return classes;
+    return const ['P1-A', 'P1-B', 'P2-A', 'P2-B', 'P3-A', 'P3-B']
+        .map(
+          (name) => SchoolClass(
+            id: name,
+            schoolId: '',
+            teacherId: '',
+            name: name,
+            grade: _parseGrade(name),
+          ),
+        )
+        .toList();
+  }
+
+  List<SchoolClass> get _dropdownClasses {
+    final items = List<SchoolClass>.of(_classItems);
+    final hasSelected = items.any((c) => c.name == _selectedClass);
+    if (!hasSelected) {
+      items.insert(
+        0,
+        SchoolClass(
+          id: _selectedClass,
+          schoolId: '',
+          teacherId: '',
+          name: _selectedClass,
+          grade: _parseGrade(_selectedClass),
+        ),
+      );
+    }
+    return items;
+  }
+
   Future<void> _saveTest() async {
     final title = _nameController.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a test name.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Please enter a test name.')));
       return;
     }
 
@@ -90,7 +126,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
 
     if (validQuestions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please enter at least one question and answer.'),
         ),
       );
@@ -135,8 +171,8 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
   @override
   Widget build(BuildContext context) {
     const green = AppColors.button;
-    const bg = AppColors.background;
-    const border = AppColors.border;
+    final bg = context.assessmentColors.background;
+    final border = context.assessmentColors.border;
 
     return Scaffold(
       backgroundColor: bg,
@@ -145,12 +181,12 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
           children: [
             // Top Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
                         Text(
@@ -170,32 +206,32 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
-                  const Text(
+                  Text(
                     'Set up a test',
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
-                      color: AppColors.text,
+                      color: context.assessmentColors.text,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'Choose what learners will read or solve.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: AppColors.secondaryText,
+                      color: context.assessmentColors.secondaryText,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Segmented Subject Switcher
                   Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.barBorder,
+                      color: context.assessmentColors.barBorder,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -205,14 +241,14 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                             onTap: () {
                               context.pushReplacement(AppRoutes.setupReading);
                             },
-                            child: const Padding(
+                            child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 10),
                               child: Text(
                                 'Soma · Reading',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.secondaryText,
+                                  color: context.assessmentColors.secondaryText,
                                 ),
                               ),
                             ),
@@ -220,12 +256,12 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                         ),
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            padding: EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: green,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Imibare · Math',
                               textAlign: TextAlign.center,
                               style: TextStyle(
@@ -238,54 +274,54 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Test Name
-                  const Text(
+                  Text(
                     'Test name',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: AppColors.text,
+                      color: context.assessmentColors.text,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextField(
                     controller: _nameController,
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.all(16),
+                      fillColor: context.assessmentColors.surface,
+                      contentPadding: EdgeInsets.all(16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: border),
+                        borderSide: BorderSide(color: border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: border),
+                        borderSide: BorderSide(color: border),
                       ),
-                      focusedBorder: const OutlineInputBorder(
+                      focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         borderSide: BorderSide(color: green, width: 1.5),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // Class Selector Dropdown
-                  const Text(
+                  Text(
                     'Target class',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: AppColors.text,
+                      color: context.assessmentColors.text,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: border),
                     ),
@@ -293,15 +329,13 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                       child: DropdownButton<String>(
                         value: _selectedClass,
                         isExpanded: true,
-                        items: ['P1-A', 'P1-B', 'P2-A', 'P2-B', 'P3-A', 'P3-B']
+                        items: _dropdownClasses
                             .map(
                               (cls) => DropdownMenuItem(
-                                value: cls,
+                                value: cls.name,
                                 child: Text(
-                                  'Class $cls',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  'Class ${cls.name}',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ),
                             )
@@ -313,37 +347,53 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                               _nameController.text =
                                   '$_selectedClass · Math practice';
                             });
+                            SchoolClass? match;
+                            for (final c in _dropdownClasses) {
+                              if (c.name == v) {
+                                match = c;
+                                break;
+                              }
+                            }
+                            if (match != null) {
+                              context
+                                  .read<AssessmentProvider>()
+                                  .setSelectedClass(
+                                    name: match.name,
+                                    id: match.id,
+                                    schoolId: match.schoolId,
+                                  );
+                            }
                           }
                         },
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Questions Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Math questions',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: context.assessmentColors.text,
                         ),
                       ),
                       Text(
                         '${_questions.length} questions',
-                        style: const TextStyle(
-                          color: AppColors.secondaryText,
+                        style: TextStyle(
+                          color: context.assessmentColors.secondaryText,
                           fontSize: 14,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
 
-                  const Row(
+                  Row(
                     children: [
                       Expanded(
                         flex: 3,
@@ -351,7 +401,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                           'Question / Problem',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: AppColors.secondaryText,
+                            color: context.assessmentColors.secondaryText,
                             fontSize: 13,
                           ),
                         ),
@@ -364,7 +414,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: AppColors.secondaryText,
+                            color: context.assessmentColors.secondaryText,
                             fontSize: 13,
                           ),
                         ),
@@ -372,13 +422,13 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                       SizedBox(width: 44),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   // Questions Form
                   ...List.generate(_questions.length, (i) {
                     final q = _questions[i];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
+                      padding: EdgeInsets.only(bottom: 10),
                       child: Row(
                         children: [
                           Expanded(
@@ -387,28 +437,29 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                               controller: q.prompt,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
+                                fillColor: context.assessmentColors.surface,
+                                contentPadding: EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 14,
                                 ),
                                 prefix: Text(
                                   '${i + 1}.  ',
-                                  style: const TextStyle(
-                                    color: Colors.black54,
+                                  style: TextStyle(
+                                    color:
+                                        context.assessmentColors.secondaryText,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: border),
+                                  borderSide: BorderSide(color: border),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: border),
+                                  borderSide: BorderSide(color: border),
                                 ),
-                                focusedBorder: const OutlineInputBorder(
+                                focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.all(
                                     Radius.circular(12),
                                   ),
@@ -420,7 +471,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             flex: 1,
                             child: TextField(
@@ -428,19 +479,19 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                               textAlign: TextAlign.center,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
+                                fillColor: context.assessmentColors.surface,
+                                contentPadding: EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: border),
+                                  borderSide: BorderSide(color: border),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: border),
+                                  borderSide: BorderSide(color: border),
                                 ),
-                                focusedBorder: const OutlineInputBorder(
+                                focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.all(
                                     Radius.circular(12),
                                   ),
@@ -464,8 +515,8 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                             icon: Icon(
                               Icons.remove_circle_outline,
                               color: _questions.length > 1
-                                  ? AppColors.warningStroke
-                                  : Colors.grey.shade300,
+                                  ? context.assessmentColors.warningStroke
+                                  : context.assessmentColors.border,
                               size: 22,
                             ),
                             tooltip: 'Remove',
@@ -475,15 +526,15 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                     );
                   }),
 
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: TextButton.icon(
                       onPressed: () =>
                           setState(() => _questions.add(_MathQuestionItem())),
-                      icon: const Icon(Icons.add, color: green, size: 20),
-                      label: const Text(
+                      icon: Icon(Icons.add, color: green, size: 20),
+                      label: Text(
                         'Add question',
                         style: TextStyle(
                           color: green,
@@ -492,11 +543,11 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                         ),
                       ),
                       style: TextButton.styleFrom(
-                        backgroundColor: AppColors.primarySoft,
+                        backgroundColor: context.assessmentColors.primarySoft,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(
-                            color: AppColors.primaryBorder,
+                          side: BorderSide(
+                            color: context.assessmentColors.primaryBorder,
                           ),
                         ),
                       ),
@@ -508,9 +559,9 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
 
             // Bottom Save Button
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: BoxDecoration(
+                color: context.assessmentColors.surface,
                 border: Border(top: BorderSide(color: border)),
               ),
               child: SizedBox(
@@ -526,7 +577,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                     elevation: 0,
                   ),
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
@@ -534,7 +585,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Save & Select Learners',
                           style: TextStyle(
                             color: Colors.white,
