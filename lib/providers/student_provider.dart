@@ -54,8 +54,9 @@ class StudentProvider extends ChangeNotifier {
     if (this.classId == classId && _sub != null) return;
     this.classId = classId;
     _sub?.cancel();
+    _students = [];
     state = ViewState.loading;
-    notifyListeners();
+    // no notifyListeners() here: the proxy provider rebuilds the screens itself
     _sub = _service
         .streamStudents(classId)
         .listen(

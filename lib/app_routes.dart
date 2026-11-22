@@ -19,6 +19,9 @@ import 'screens/auth/verify_email_screen.dart';
 import 'screens/dashboard/home_screen.dart';
 import 'screens/settings/classes_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'screens/students/student_roster_screen.dart';
+import 'screens/students/student_profile_screen.dart';
+import 'screens/progress/class_progress_screen.dart';
 import 'widgets/app_shell.dart';
 import 'widgets/placeholder_screen.dart';
 
@@ -60,13 +63,12 @@ class AppRoutes {
 List<RouteBase> get studentRoutes => [
   GoRoute(
     path: AppRoutes.students,
-    builder: (_, _) => const PlaceholderScreen('Student Roster (Member 2)'),
+    builder: (_, _) => const StudentRosterScreen(),
     routes: [
       GoRoute(
         path: ':id',
-        builder: (_, state) => PlaceholderScreen(
-          'Student ${state.pathParameters['id']} (Member 2)',
-        ),
+        builder: (_, state) =>
+            StudentProfileScreen(studentId: state.pathParameters['id']!),
       ),
     ],
   ),
@@ -116,7 +118,7 @@ List<RouteBase> get assessmentRoutes => [
 List<RouteBase> get progressRoutes => [
   GoRoute(
     path: AppRoutes.progress,
-    builder: (_, _) => const PlaceholderScreen('Class Progress (Member 2)'),
+    builder: (_, _) => const ClassProgressScreen(),
   ),
 ];
 

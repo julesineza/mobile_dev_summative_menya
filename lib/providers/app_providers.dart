@@ -12,6 +12,8 @@ import 'class_provider.dart';
 import 'dashboard_provider.dart';
 import 'school_provider.dart';
 import 'settings_provider.dart';
+import '../services/student_service.dart';
+import 'student_provider.dart';
 
 /// Builds the full provider list, wiring both [SharedPreferences] and [PreferencesService]
 /// into [SettingsProvider] and seeding [AssessmentProvider] with the saved active class.
@@ -81,8 +83,16 @@ List<SingleChildWidget> get authProviders => [
   ),
 ];
 
-/// Student / class analytics providers — owned by Member 2.
-List<SingleChildWidget> get studentProviders => [];
+List<SingleChildWidget> get studentProviders => [
+  ChangeNotifierProxyProvider<ClassProvider, StudentProvider>(
+    create: (_) => StudentProvider(StudentService()),
+    update: (_, classes, previous) {
+      final c = classes.selectedClass;
+      if (c != null) previous!.listenToClass(c.id, className: c.name);
+      return previous!;
+    },
+  ),
+];
 
 /// Assessment providers — owned by Member 3.
 List<SingleChildWidget> get assessmentProviders => [];
