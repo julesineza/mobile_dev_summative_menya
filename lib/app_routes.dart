@@ -155,6 +155,8 @@ String? authRedirect(AuthProvider auth, String location) {
   if (!auth.initialized) {
     return location == AppRoutes.splash ? null : AppRoutes.splash;
   }
+  // While registering, stay on the form; the screen sends the user to login.
+  if (auth.isRegistering) return null;
   if (!auth.isSignedIn) {
     return _publicRoutes.contains(location) ? null : AppRoutes.login;
   }
