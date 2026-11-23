@@ -56,45 +56,16 @@ class _SupportPlanScreenState extends State<SupportPlanScreen> {
   }
 
   Future<void> _newClub(ReviewProvider p) async {
-    final name = TextEditingController();
-    final schedule = TextEditingController();
-    final create = await showDialog<bool>(
+    // the dialog owns its text controllers and disposes them only after its
+    // closing animation ends. disposing them here, right after showDialog
+    // returns, crashed with "_dependents.isEmpty".
+    final club = await showDialog<({String name, String schedule})>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New remedial club'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Club name'),
-            ),
-            TextField(
-              controller: schedule,
-              decoration: const InputDecoration(
-                labelText: 'Schedule (optional)',
-                hintText: 'Tue/Thu 3pm',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      builder: (_) => const _NewClubDialog(),
     );
-    final clubName = name.text;
-    final clubSchedule = schedule.text;
-    name.dispose();
-    schedule.dispose();
-    if (create != true || !mounted) return;
+    if (club == null || !mounted) return;
+    final clubName = club.name;
+    final clubSchedule = club.schedule;
     final ok = await p.createClub(
       name: clubName,
       teacherId: _teacherId,
@@ -297,6 +268,62 @@ class _ClubPicker extends StatelessWidget {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('New club'),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// asks for the new club's name and schedule; pops with them, or null on cancel.
+class _NewClubDialog extends StatefulWidget {
+  const _NewClubDialog();
+
+  @override
+  State<_NewClubDialog> createState() => _NewClubDialogState();
+}
+
+class _NewClubDialogState extends State<_NewClubDialog> {
+  final _name = TextEditingController();
+  final _schedule = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _schedule.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New remedial club'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _name,
+            decoration: const InputDecoration(labelText: 'Club name'),
+          ),
+          TextField(
+            controller: _schedule,
+            decoration: const InputDecoration(
+              labelText: 'Schedule (optional)',
+              hintText: 'Tue/Thu 3pm',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, (
+            name: _name.text,
+            schedule: _schedule.text,
+          )),
+          child: const Text('Create'),
         ),
       ],
     );

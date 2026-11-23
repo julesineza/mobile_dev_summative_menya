@@ -1,7 +1,9 @@
 // OWNER: Member 1. Email/password + Google sign-in, register (teacher picks a school), login, logout.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/failure.dart';
 import '../core/firebase_guard.dart';
@@ -70,14 +72,32 @@ class AuthService {
   /// A first-time Google user gets a profile with an empty schoolId; the app
   /// then asks them to pick a school.
   Future<bool> signInWithGoogle() => guardFirebase(() async {
-    final provider = GoogleAuthProvider()
-      ..addScope('email')
-      ..setCustomParameters({'prompt': 'select_account'});
-
     try {
-      final result = kIsWeb
-          ? await _auth.signInWithPopup(provider)
-          : await _auth.signInWithProvider(provider);
+      final UserCredential result;
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider()
+          ..addScope('email')
+          ..setCustomParameters({'prompt': 'select_account'});
+        result = await _auth.signInWithPopup(provider);
+      } else {
+        // Native Google sign-in on Android/iOS. The browser-based
+        // signInWithProvider flow can hang after "Next" on mobile.
+        await _initGoogle();
+        final GoogleSignInAccount account;
+        try {
+          account = await GoogleSignIn.instance.authenticate();
+        } on GoogleSignInException catch (e) {
+          if (e.code == GoogleSignInExceptionCode.canceled) return false;
+          rethrow;
+        }
+        final idToken = account.authentication.idToken;
+        if (idToken == null) {
+          throw const Failure('Google sign-in failed. Please try again.');
+        }
+        result = await _auth.signInWithCredential(
+          GoogleAuthProvider.credential(idToken: idToken),
+        );
+      }
       final user = result.user!;
 
       final doc = _users.doc(user.uid);
@@ -122,7 +142,32 @@ class AuthService {
     return guardFirebase(() => _users.doc(uid).update(changes));
   }
 
-  /// Signs out of Firebase. Google sign-in now goes through Firebase itself,
-  /// so there is no separate Google session to clear.
-  Future<void> signOut() => guardFirebase(() => _auth.signOut());
+  /// Signs out of Firebase and, on mobile, the native Google session so the
+  /// account chooser shows again next time.
+  Future<void> signOut() => guardFirebase(() async {
+    if (!kIsWeb && _googleReady) {
+      await GoogleSignIn.instance.signOut();
+    }
+    await _auth.signOut();
+  });
+
+  // OAuth client IDs from google-services.json (Firebase project 879135523749).
+  static const _webClientId =
+      '879135523749-77i6eoogo1jeb9ipk9769qqutlmbulf3.apps.googleusercontent.com';
+  static const _iosClientId =
+      '879135523749-iuts2qdkr1ief2s8lc61128o5ig2gthg.apps.googleusercontent.com';
+
+  static bool _googleReady = false;
+
+  /// GoogleSignIn.instance must be initialized exactly once before use.
+  static Future<void> _initGoogle() async {
+    if (_googleReady) return;
+    await GoogleSignIn.instance.initialize(
+      clientId: defaultTargetPlatform == TargetPlatform.iOS
+          ? _iosClientId
+          : null,
+      serverClientId: _webClientId,
+    );
+    _googleReady = true;
+  }
 }
