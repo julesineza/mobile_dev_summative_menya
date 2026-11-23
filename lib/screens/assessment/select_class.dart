@@ -111,7 +111,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
 
                   // Section header
                   Consumer<ClassProvider>(
-                    builder: (_, classProvider, __) {
+                    builder: (_, classProvider, _) {
                       final classes = classProvider.classes;
                       final picked = _findSelected(classes);
                       return Row(
@@ -143,20 +143,10 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
 
                   // Class cards
                   Consumer<ClassProvider>(
-                    builder: (_, classProvider, __) {
+                    builder: (_, classProvider, _) {
                       final classes = classProvider.classes;
                       if (classes.isEmpty) {
-                        return Padding(
-                          padding: EdgeInsets.symmetric(vertical: 32),
-                          child: Text(
-                            'You have no classes yet. Add one in Settings → Classes.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: context.assessmentColors.secondaryText,
-                            ),
-                          ),
-                        );
+                        return const NoClassPrompt();
                       }
                       return Column(
                         children: classes.map((schoolClass) {
@@ -286,7 +276,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                 width: double.infinity,
                 height: 54,
                 child: Consumer<ClassProvider>(
-                  builder: (_, classProvider, __) {
+                  builder: (_, classProvider, _) {
                     final selectedClass = _findSelected(classProvider.classes);
                     return ElevatedButton(
                       onPressed: selectedClass == null
@@ -330,7 +320,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: green,
-                        disabledBackgroundColor: green.withOpacity(0.4),
+                        disabledBackgroundColor: green.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -349,6 +339,61 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                     );
                   },
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown on assessment screens when the teacher has no class yet. There is no
+/// fallback class: the teacher is sent to create a real one.
+class NoClassPrompt extends StatelessWidget {
+  const NoClassPrompt({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.class_outlined,
+              size: 64,
+              color: context.assessmentColors.secondaryText,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No class yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: context.assessmentColors.text,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Create a class and add learners before running a quick check.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: context.assessmentColors.secondaryText,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.classes),
+              icon: Icon(Icons.add, color: Colors.white),
+              label: Text(
+                'Create a class',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.button,
               ),
             ),
           ],

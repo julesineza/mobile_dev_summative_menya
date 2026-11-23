@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/failure.dart';
 import '../../core/theme/assessment_colors.dart';
+import 'select_class.dart' show NoClassPrompt;
 
 // ── Local UI-only model ───────────────────────────────────────────────────────
 // Wraps [AssessmentLearner] with a selection toggle for the multi-select UI.
@@ -19,7 +20,7 @@ class _UILearner {
   final String className;
   final String schoolId;
   final String classId;
-  bool isSelected;
+  bool isSelected = false;
 
   _UILearner({
     required this.id,
@@ -28,7 +29,6 @@ class _UILearner {
     required this.className,
     required this.schoolId,
     required this.classId,
-    this.isSelected = false,
   });
 }
 
@@ -47,6 +47,10 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  /// Class the list was loaded for; reload when the active class changes
+  /// (e.g. the teacher creates their first class and comes back).
+  String? _loadedClassId;
+
   @override
   void initState() {
     super.initState();
@@ -54,13 +58,24 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
   }
 
   Future<void> _loadLearners() async {
+    final provider = context.read<AssessmentProvider>();
+    _loadedClassId = provider.selectedClassId;
+    if (!provider.hasClass) {
+      // No class: build() shows the "Create a class" prompt instead.
+      setState(() {
+        _isLoading = false;
+        _errorMessage = null;
+        _learners = [];
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final provider = context.read<AssessmentProvider>();
       // Try Firestore first.
       var loaded = await provider.loadLearners();
 
@@ -112,6 +127,14 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
   Widget build(BuildContext context) {
     const green = AppColors.button;
     final lightGreen = context.assessmentColors.primarySoft;
+    final provider = context.watch<AssessmentProvider>();
+    final hasClass = provider.hasClass;
+    if (!_isLoading && provider.selectedClassId != _loadedClassId) {
+      // Active class changed while this page was open: reload its learners.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadLearners();
+      });
+    }
 
     return Scaffold(
       backgroundColor: context.assessmentColors.background,
@@ -155,7 +178,9 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
 
             // ── Body ───────────────────────────────────────────────────────
             Expanded(
-              child: _isLoading
+              child: !hasClass
+                  ? const NoClassPrompt()
+                  : _isLoading
                   ? Center(child: CircularProgressIndicator())
                   : _errorMessage != null
                   ? _buildErrorState(green)
@@ -165,7 +190,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
             ),
 
             // ── Bottom button ──────────────────────────────────────────────
-            if (!_isLoading && _errorMessage == null)
+            if (hasClass && !_isLoading && _errorMessage == null)
               Container(
                 color: context.assessmentColors.surface,
                 padding: EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -206,7 +231,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                               return;
                             }
 
-                            if (!mounted) return;
+                            if (!context.mounted) return;
                             final route =
                                 provider.selectedChoice == UserChoice.reading
                                 ? AppRoutes.prepareReading
@@ -215,7 +240,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: green,
-                      disabledBackgroundColor: green.withOpacity(0.4),
+                      disabledBackgroundColor: green.withValues(alpha: 0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -420,7 +445,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
             ),
             SizedBox(height: 16),
             Text(
-              'No learners found',
+              'No learners yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -429,7 +454,7 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
             ),
             SizedBox(height: 8),
             Text(
-              'No students are registered for this class yet.',
+              'Add students to this class first.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: context.assessmentColors.secondaryText,
@@ -438,10 +463,19 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
             ),
             SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _loadLearners,
-              icon: Icon(Icons.refresh),
-              label: Text('Retry'),
+              // Students are added from Settings → Classes → (class) → Students.
+              onPressed: () => context.push(AppRoutes.classes),
+              icon: Icon(Icons.person_add_alt, color: Colors.white),
+              label: Text(
+                'Add students',
+                style: TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(backgroundColor: green),
+            ),
+            TextButton.icon(
+              onPressed: _loadLearners,
+              icon: Icon(Icons.refresh, color: green),
+              label: Text('Refresh', style: TextStyle(color: green)),
             ),
           ],
         ),

@@ -31,23 +31,23 @@ class AssessmentLearner {
 }
 
 class AssessmentProvider extends ChangeNotifier {
-  AssessmentProvider({AssessmentService? service, String? initialClassName})
+  AssessmentProvider({AssessmentService? service})
     : _service = service ?? AssessmentService() {
-    if (initialClassName != null && initialClassName.isNotEmpty) {
-      _selectedClassName = initialClassName;
-      _selectedClassId = _resolveClassId(initialClassName);
-    }
+    _service.onSyncError = _onSyncError;
   }
-
-  static const fallbackSchoolId = 'gs-kigali-central';
-  static const fallbackClassId = 'class-p3-a';
-  static const fallbackTeacherId = 'teacher-1';
 
   final AssessmentService _service;
   UserChoice _selectedAssessment = UserChoice.none;
-  String _selectedClassName = 'P3-A';
-  String _selectedClassId = fallbackClassId;
-  String _selectedSchoolId = fallbackSchoolId;
+
+  // The active class always comes from ClassProvider (the teacher's real
+  // classes). There are no hardcoded fallbacks: with no class, [hasClass] is
+  // false and the screens ask the teacher to create one.
+  String _selectedClassName = '';
+  String? _selectedClassId;
+  String _selectedSchoolId = '';
+
+  /// Message of the last background write Firestore rejected, if any.
+  String? _syncError;
 
   /// Real grade of the selected class (from the class document). Null when
   /// only the class name is known; then the grade is guessed from the name.
@@ -65,8 +65,10 @@ class AssessmentProvider extends ChangeNotifier {
 
   UserChoice get selectedChoice => _selectedAssessment;
   String get selectedClassName => _selectedClassName;
-  String get selectedClassId => _selectedClassId;
+  String? get selectedClassId => _selectedClassId;
   String get selectedSchoolId => _selectedSchoolId;
+  bool get hasClass => _selectedClassId != null;
+  String? get syncError => _syncError;
   int get selectedGrade => _selectedGrade ?? parseGrade(_selectedClassName);
   AssessmentTest? get test => _test;
 
@@ -91,26 +93,35 @@ class AssessmentProvider extends ChangeNotifier {
   List<AssessmentResult> get completedResults =>
       List.unmodifiable(_completedResults);
 
-  static String _resolveClassId(String className) {
-    final sanitized = className.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
-    return 'class-$sanitized';
-  }
-
-  /// Called by [ChangeNotifierProxyProvider] when [SettingsProvider.activeClass] changes.
-  /// Updates the selected class without firing a full reset.
-  /// NOTE: only a fallback — the class id is derived from the name here, so
-  /// [syncFromClass] should be used whenever the real [SchoolClass] is known.
-  void syncClassFromSettings(String className) {
-    if (className.isEmpty || _selectedClassName == className) return;
-    _selectedClassName = className;
-    _selectedClassId = _resolveClassId(className);
+  /// Called when the teacher has no class (or signed out): forget the class
+  /// and any assessment in progress for it.
+  void clearClass() {
+    if (_selectedClassId == null) return;
+    _selectedClassId = null;
+    _selectedClassName = '';
+    _selectedSchoolId = '';
     _selectedGrade = null;
+    _test = null;
+    _learners = const [];
+    _currentLearnerIndex = 0;
+    _session = null;
     notifyListeners();
   }
 
-  /// Syncs the selected class using the real Firestore class document.
-  /// Always prefer this over [syncClassFromSettings] so queries use the
-  /// actual class id instead of a name-derived one.
+  void clearSyncError() {
+    if (_syncError == null) return;
+    _syncError = null;
+    notifyListeners();
+  }
+
+  /// Background writes report rejections here (the UI does not wait for them).
+  void _onSyncError(Failure failure) {
+    _syncError = failure.message;
+    notifyListeners();
+  }
+
+  /// Syncs the selected class from the real Firestore class document
+  /// ([ClassProvider.selectedClass]).
   void syncFromClass({
     required String id,
     required String name,
@@ -156,6 +167,7 @@ class AssessmentProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    _requireClass();
     _test = await _service.getTest(
       schoolId: _selectedSchoolId,
       subject: subject,
@@ -166,6 +178,14 @@ class AssessmentProvider extends ChangeNotifier {
 
   static Subject _subjectFor(UserChoice choice) =>
       choice == UserChoice.math ? Subject.math : Subject.reading;
+
+  String _requireClass() {
+    final id = _selectedClassId;
+    if (id == null) {
+      throw const Failure('Create or choose a class first.');
+    }
+    return id;
+  }
 
   Future<AssessmentTest> _requireTest() async {
     if (_test == null) await prepareAssessment();
@@ -189,7 +209,6 @@ class AssessmentProvider extends ChangeNotifier {
   }) async {
     final test = await _service.createTest(
       schoolId: schoolId ?? _selectedSchoolId,
-      createdBy: fallbackTeacherId,
       title: title,
       subject: subject,
       grade: grade,
@@ -259,7 +278,7 @@ class AssessmentProvider extends ChangeNotifier {
   /// Loads students directly from Firebase Firestore `students` collection.
   Future<List<AssessmentLearner>> loadLearners() async {
     final students = await _service.getStudents(
-      classId: _selectedClassId,
+      classId: _requireClass(),
       schoolId: _selectedSchoolId,
     );
     return students
@@ -284,8 +303,7 @@ class AssessmentProvider extends ChangeNotifier {
 
     _session = await _service.createSession(
       schoolId: currentLearner?.schoolId ?? _selectedSchoolId,
-      classId: currentLearner?.classId ?? _selectedClassId,
-      teacherId: fallbackTeacherId,
+      classId: currentLearner?.classId ?? _requireClass(),
       test: activeTest,
       studentIds: studentIds,
     );
@@ -332,7 +350,6 @@ class AssessmentProvider extends ChangeNotifier {
       classId: learner.classId,
       sessionId: _session!.id,
       studentId: learner.id,
-      teacherId: fallbackTeacherId,
       subject: Subject.reading,
       language: activeTest.language,
       level: level,
@@ -378,7 +395,6 @@ class AssessmentProvider extends ChangeNotifier {
       classId: learner.classId,
       sessionId: _session!.id,
       studentId: learner.id,
-      teacherId: fallbackTeacherId,
       subject: Subject.math,
       language: activeTest.language,
       level: level,

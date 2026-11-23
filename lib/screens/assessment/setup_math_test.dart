@@ -10,6 +10,7 @@ import '../../models/enums.dart';
 import '../../models/school_class.dart';
 import '../../providers/assessment_provider.dart';
 import '../../providers/class_provider.dart';
+import 'select_class.dart' show NoClassPrompt;
 
 class _MathQuestionItem {
   final TextEditingController prompt;
@@ -62,21 +63,17 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
     super.dispose();
   }
 
-  int _parseGrade(String className) => AssessmentProvider.parseGrade(className);
-
-  /// Grade of the class picked in the dropdown (real grade when known).
-  int get _selectedGrade {
-    // read (not watch): this runs from button handlers, outside build.
+  /// The picked class, read outside build (button handlers).
+  SchoolClass? get _pickedClass {
     for (final c in context.read<ClassProvider>().classes) {
-      if (c.name == _selectedClass) return c.grade;
+      if (c.name == _selectedClass) return c;
     }
-    return _parseGrade(_selectedClass);
+    return null;
   }
 
-  /// Makes the picked class the active one, so the learner list matches.
-  /// Placeholder classes (no school yet) only change the label.
+  /// Makes the picked class the active one, so the learner list matches and
+  /// the test is saved for its school and grade.
   void _selectClass(SchoolClass c) {
-    if (c.schoolId.isEmpty) return;
     context.read<AssessmentProvider>().setSelectedClass(
       name: c.name,
       id: c.id,
@@ -86,39 +83,9 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
     context.read<ClassProvider>().select(c.id);
   }
 
-  List<SchoolClass> get _classItems {
-    final classes = context.watch<ClassProvider>().classes;
-    if (classes.isNotEmpty) return classes;
-    return const ['P1-A', 'P1-B', 'P2-A', 'P2-B', 'P3-A', 'P3-B']
-        .map(
-          (name) => SchoolClass(
-            id: name,
-            schoolId: '',
-            teacherId: '',
-            name: name,
-            grade: _parseGrade(name),
-          ),
-        )
-        .toList();
-  }
-
-  List<SchoolClass> get _dropdownClasses {
-    final items = List<SchoolClass>.of(_classItems);
-    final hasSelected = items.any((c) => c.name == _selectedClass);
-    if (!hasSelected) {
-      items.insert(
-        0,
-        SchoolClass(
-          id: _selectedClass,
-          schoolId: '',
-          teacherId: '',
-          name: _selectedClass,
-          grade: _parseGrade(_selectedClass),
-        ),
-      );
-    }
-    return items;
-  }
+  /// The teacher's real classes only (no hardcoded list).
+  List<SchoolClass> get _dropdownClasses =>
+      context.watch<ClassProvider>().classes;
 
   Future<void> _saveTest() async {
     final title = _nameController.text.trim();
@@ -151,6 +118,16 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
       return;
     }
 
+    final picked = _pickedClass;
+    if (picked == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Create or choose a class first.')),
+      );
+      return;
+    }
+    // Save the test for the picked class's school and grade.
+    _selectClass(picked);
+
     setState(() => _isSaving = true);
 
     try {
@@ -158,7 +135,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
       final createdTest = await provider.saveCustomTest(
         title: title,
         subject: Subject.math,
-        grade: _selectedGrade,
+        grade: picked.grade,
         language: Language.english,
         questions: validQuestions,
       );
@@ -191,6 +168,12 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
     const green = AppColors.button;
     final bg = context.assessmentColors.background;
     final border = context.assessmentColors.border;
+    final classes = _dropdownClasses;
+    // Keep the dropdown value valid: default to the active class, else the
+    // first real class.
+    if (classes.isNotEmpty && !classes.any((c) => c.name == _selectedClass)) {
+      _selectedClass = classes.first.name;
+    }
 
     return Scaffold(
       backgroundColor: bg,
@@ -223,7 +206,9 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
             ),
 
             Expanded(
-              child: ListView(
+              child: classes.isEmpty
+                  ? const NoClassPrompt()
+                  : ListView(
                 padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
                   Text(

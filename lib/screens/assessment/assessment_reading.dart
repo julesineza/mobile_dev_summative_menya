@@ -222,7 +222,7 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                           color: context.assessmentColors.divider,
                         ),
                         _MetricItem(
-                          value: '${wpm.toStringAsFixed(0)}',
+                          value: wpm.toStringAsFixed(0),
                           label: 'WPM',
                           color: context.assessmentColors.text,
                         ),
