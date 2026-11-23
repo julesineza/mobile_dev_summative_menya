@@ -124,6 +124,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  SyncErrorBanner(message: p.resultsError),
                   _SubjectCard(subject: Subject.reading, results: results),
                   const SizedBox(height: 12),
                   _SubjectCard(subject: Subject.math, results: results),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:mobile_dev_summative_menya/core/failure.dart';
 import 'package:mobile_dev_summative_menya/core/view_state.dart';
 import 'package:mobile_dev_summative_menya/models/assessment_result.dart';
 import 'package:mobile_dev_summative_menya/models/enums.dart';
@@ -31,6 +32,11 @@ void main() {
     _s('3', 'Samir', SupportStatus.needsSupport),
     _s('4', 'Jules', SupportStatus.needsSupport),
   ];
+
+  setUpAll(() {
+    // mocktail needs a sample Student for any() matchers.
+    registerFallbackValue(_s('x', 'x', SupportStatus.onTrack));
+  });
 
   setUp(() {
     service = MockStudentService();
@@ -70,7 +76,62 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(provider.state, ViewState.error);
-    expect(provider.error, contains('offline'));
+    // A friendly message, not the raw exception text.
+    expect(provider.error, 'Could not load students. Check your connection.');
+  });
+
+  test('results stream error sets resultsError, roster still loads', () async {
+    when(() => service.streamClassResults('c1'))
+        .thenAnswer((_) => Stream.error(Exception('denied')));
+
+    await loadStudents();
+
+    expect(provider.resultsError, 'Could not load assessment results.');
+    expect(provider.state, ViewState.success);
+    expect(provider.total, 4);
+  });
+
+  test('a rejected add shows a sync error the user can dismiss', () async {
+    when(
+      () => service.addStudent(any(), onError: any(named: 'onError')),
+    ).thenAnswer((inv) async {
+      // Pretend the server rejected the write.
+      final onError = inv.namedArguments[#onError] as void Function(Failure)?;
+      onError?.call(const Failure('You do not have permission to do that.'));
+    });
+
+    final ok = await provider.addStudent(
+      schoolId: 'sch1',
+      classId: 'c1',
+      name: 'Aline',
+      rollNo: 7,
+    );
+
+    expect(ok, isTrue); // the dialog still closes straight away
+    expect(
+      provider.syncError,
+      'Could not add Aline. You do not have permission to do that.',
+    );
+
+    provider.clearSyncError();
+    expect(provider.syncError, isNull);
+  });
+
+  test('a rejected delete names the student', () async {
+    when(
+      () => service.deleteStudent(any(), onError: any(named: 'onError')),
+    ).thenAnswer((inv) async {
+      final onError = inv.namedArguments[#onError] as void Function(Failure)?;
+      onError?.call(const Failure('You do not have permission to do that.'));
+    });
+    await loadStudents();
+
+    await provider.deleteStudent('3');
+
+    expect(
+      provider.syncError,
+      'Could not remove Samir. You do not have permission to do that.',
+    );
   });
 
   test('countOf and needsAttention', () async {

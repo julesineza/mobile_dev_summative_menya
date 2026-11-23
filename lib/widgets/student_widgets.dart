@@ -266,3 +266,43 @@ class StudentRow extends StatelessWidget {
     );
   }
 }
+
+// Red error banner. Shows nothing when message is null.
+// The close button only appears when onDismiss is given.
+class SyncErrorBanner extends StatelessWidget {
+  const SyncErrorBanner({super.key, required this.message, this.onDismiss});
+  final String? message;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = message;
+    if (text == null) return const SizedBox.shrink();
+    final c = context.assessmentColors;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      constraints: const BoxConstraints(minHeight: 48),
+      decoration: BoxDecoration(
+        color: c.warningFill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.warningStroke),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, size: 20, color: c.warningStroke),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 13, color: c.text)),
+          ),
+          if (onDismiss != null)
+            IconButton(
+              tooltip: 'Dismiss',
+              icon: Icon(Icons.close, size: 18, color: c.text),
+              onPressed: onDismiss,
+            ),
+        ],
+      ),
+    );
+  }
+}

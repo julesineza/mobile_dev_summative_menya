@@ -80,6 +80,10 @@ class StudentRosterScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              SyncErrorBanner(
+                message: p.syncError,
+                onDismiss: p.clearSyncError,
+              ),
               Expanded(child: _list(context, p)),
             ],
           ),

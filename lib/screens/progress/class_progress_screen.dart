@@ -52,6 +52,7 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            SyncErrorBanner(message: p.resultsError),
             MenyaCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
