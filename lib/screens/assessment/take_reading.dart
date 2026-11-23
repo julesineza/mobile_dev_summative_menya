@@ -41,9 +41,7 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            error is Failure
-                ? error.message
-                : 'Could not start the session. It will be retried when you save.',
+            error is Failure ? error.message : 'Could not start the session. It will be retried when you save.',
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -80,8 +78,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
   }
 
   /// "brother." and "brother" are the same word for error tracking.
-  static String _cleanWord(String word) =>
-      word.replaceAll(RegExp(r"^[^\p{L}\p{N}']+|[^\p{L}\p{N}']+$", unicode: true), '');
+  static String _cleanWord(String word) => word.replaceAll(
+    RegExp(r"^[^\p{L}\p{N}']+|[^\p{L}\p{N}']+$", unicode: true),
+    '',
+  );
 
   void _startTimer() {
     _timer?.cancel();

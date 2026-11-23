@@ -18,4 +18,3 @@ class AppColors {
   static const Color amberSoft = Color(0xFFFFF3CD);
   static const Color amberText = Color(0xFF856404);
 }
-

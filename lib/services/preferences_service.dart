@@ -15,14 +15,16 @@ class PreferencesService {
   static const String keyPreferredLanguage = 'menya_pref_preferred_language';
   static const String keyHapticFeedback = 'menya_pref_haptic_feedback';
 
-  SharedPreferences? _prefs;
+  final SharedPreferences? _prefs;
 
   static Future<PreferencesService> init() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       return PreferencesService(prefs);
     } catch (e) {
-      debugPrint('[PreferencesService] Error initializing SharedPreferences: $e');
+      debugPrint(
+        '[PreferencesService] Error initializing SharedPreferences: $e',
+      );
       return PreferencesService();
     }
   }

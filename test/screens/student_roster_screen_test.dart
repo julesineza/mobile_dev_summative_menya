@@ -63,10 +63,7 @@ void main() {
 
     final router = GoRouter(
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, _) => const StudentRosterScreen(),
-        ),
+        GoRoute(path: '/', builder: (_, _) => const StudentRosterScreen()),
         GoRoute(
           path: '/students/:id',
           builder: (_, state) =>

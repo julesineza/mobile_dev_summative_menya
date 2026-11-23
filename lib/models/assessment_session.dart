@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 /// One "quick check": a teacher runs ONE test over one or more learners of ONE class.
@@ -27,7 +28,9 @@ class AssessmentSession extends Equatable {
   final DateTime createdAt;
   final SessionStatus status;
 
-  factory AssessmentSession.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory AssessmentSession.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return AssessmentSession(
       id: doc.id,
@@ -44,17 +47,28 @@ class AssessmentSession extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'classId': classId,
-        'teacherId': teacherId,
-        'testId': testId,
-        'subject': subject.name,
-        'language': language.name,
-        'studentIds': studentIds,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'status': status.name,
-      };
+    'schoolId': schoolId,
+    'classId': classId,
+    'teacherId': teacherId,
+    'testId': testId,
+    'subject': subject.name,
+    'language': language.name,
+    'studentIds': studentIds,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'status': status.name,
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, classId, teacherId, testId, subject, language, studentIds, createdAt, status];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    classId,
+    teacherId,
+    testId,
+    subject,
+    language,
+    studentIds,
+    createdAt,
+    status,
+  ];
 }

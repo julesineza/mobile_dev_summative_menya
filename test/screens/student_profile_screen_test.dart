@@ -53,8 +53,7 @@ void main() {
     service = MockStudentService();
     students = StreamController<List<Student>>();
     results = StreamController<List<AssessmentResult>>();
-    when(() => service.streamStudents('c1'))
-        .thenAnswer((_) => students.stream);
+    when(() => service.streamStudents('c1')).thenAnswer((_) => students.stream);
     when(() => service.streamClassResults('c1'))
         .thenAnswer((_) => results.stream);
     provider = StudentProvider(service);
@@ -124,16 +123,37 @@ void main() {
     students.add([_samir]);
     results.add([
       // Reading went 60% → 80%: improving.
-      _r('r1', Subject.reading, ResponseLevel.struggling, 60,
-          DateTime(2026, 11, 1)),
-      _r('r2', Subject.reading, ResponseLevel.developing, 80,
-          DateTime(2026, 11, 10)),
+      _r(
+        'r1',
+        Subject.reading,
+        ResponseLevel.struggling,
+        60,
+        DateTime(2026, 11, 1),
+      ),
+      _r(
+        'r2',
+        Subject.reading,
+        ResponseLevel.developing,
+        80,
+        DateTime(2026, 11, 10),
+      ),
       // Only one math check: first check.
-      _r('m1', Subject.math, ResponseLevel.proficient, 90,
-          DateTime(2026, 11, 5)),
+      _r(
+        'm1',
+        Subject.math,
+        ResponseLevel.proficient,
+        90,
+        DateTime(2026, 11, 5),
+      ),
       // Another student's result must not show up.
-      _r('x1', Subject.math, ResponseLevel.struggling, 10,
-          DateTime(2026, 11, 6), studentId: '9'),
+      _r(
+        'x1',
+        Subject.math,
+        ResponseLevel.struggling,
+        10,
+        DateTime(2026, 11, 6),
+        studentId: '9',
+      ),
     ]);
     await pumpScreen(tester);
 
@@ -148,10 +168,20 @@ void main() {
     provider.listenToClass('c1');
     students.add([_samir]);
     results.add([
-      _r('r1', Subject.reading, ResponseLevel.proficient, 90,
-          DateTime(2026, 11, 1)),
-      _r('r2', Subject.reading, ResponseLevel.struggling, 40,
-          DateTime(2026, 11, 10)),
+      _r(
+        'r1',
+        Subject.reading,
+        ResponseLevel.proficient,
+        90,
+        DateTime(2026, 11, 1),
+      ),
+      _r(
+        'r2',
+        Subject.reading,
+        ResponseLevel.struggling,
+        40,
+        DateTime(2026, 11, 10),
+      ),
     ]);
     await pumpScreen(tester);
 
@@ -163,10 +193,20 @@ void main() {
     provider.listenToClass('c1');
     students.add([_samir]);
     results.add([
-      _r('r1', Subject.reading, ResponseLevel.struggling, 60,
-          DateTime(2026, 11, 1)),
-      _r('m1', Subject.math, ResponseLevel.proficient, 90,
-          DateTime(2026, 11, 5)),
+      _r(
+        'r1',
+        Subject.reading,
+        ResponseLevel.struggling,
+        60,
+        DateTime(2026, 11, 1),
+      ),
+      _r(
+        'm1',
+        Subject.math,
+        ResponseLevel.proficient,
+        90,
+        DateTime(2026, 11, 5),
+      ),
     ]);
     await pumpScreen(tester);
 
@@ -176,10 +216,7 @@ void main() {
     expect(math, findsOneWidget);
     expect(reading, findsOneWidget);
     // Newest (math, Nov 5) is above the older reading check.
-    expect(
-      tester.getTopLeft(math).dy,
-      lessThan(tester.getTopLeft(reading).dy),
-    );
+    expect(tester.getTopLeft(math).dy, lessThan(tester.getTopLeft(reading).dy));
   });
 
   testWidgets('shows a banner when results fail to load', (tester) async {

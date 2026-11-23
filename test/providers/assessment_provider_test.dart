@@ -876,9 +876,7 @@ void main() {
           studentIds: any(named: 'studentIds'),
         ),
       ).thenAnswer((_) async => session);
-      when(
-        () => mockService.completeSession(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockService.completeSession(any())).thenAnswer((_) async {});
 
       provider.setCustomTest(makeTest());
       await provider.ensureSession();

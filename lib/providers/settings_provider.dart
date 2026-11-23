@@ -62,8 +62,7 @@ class SettingsProvider extends ChangeNotifier {
       _timerMode =
           prefs.getString(PreferencesService.keyTimerMode) ?? 'count_up';
       _preferredLanguage =
-          prefs.getString(PreferencesService.keyPreferredLanguage) ??
-          'English';
+          prefs.getString(PreferencesService.keyPreferredLanguage) ?? 'English';
       _hapticFeedback =
           prefs.getBool(PreferencesService.keyHapticFeedback) ?? true;
     } else if (_service != null) {

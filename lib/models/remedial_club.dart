@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 /// A remedial club, created by a teacher. Who is IN the club is stored in clubEnrollments.
@@ -19,7 +20,9 @@ class RemedialClub extends Equatable {
   final Subject subject;
   final String? schedule; // "Tue/Thu 3pm"
 
-  factory RemedialClub.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory RemedialClub.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return RemedialClub(
       id: doc.id,
@@ -32,12 +35,12 @@ class RemedialClub extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'createdBy': createdBy,
-        'name': name,
-        'subject': subject.name,
-        'schedule': schedule,
-      };
+    'schoolId': schoolId,
+    'createdBy': createdBy,
+    'name': name,
+    'subject': subject.name,
+    'schedule': schedule,
+  };
 
   @override
   List<Object?> get props => [id, schoolId, createdBy, name, subject, schedule];

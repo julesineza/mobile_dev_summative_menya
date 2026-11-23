@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 /// One learner's result inside a session. Graded TWO ways:
@@ -47,7 +48,9 @@ class AssessmentResult extends Equatable {
 
   bool get teacherOverrode => autoLevel != null && autoLevel != level;
 
-  factory AssessmentResult.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory AssessmentResult.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return AssessmentResult(
       id: doc.id,
@@ -59,7 +62,9 @@ class AssessmentResult extends Equatable {
       subject: Subject.values.byName(d['subject'] as String),
       language: Language.values.byName(d['language'] as String),
       level: ResponseLevel.fromValue(d['level'] as int),
-      autoLevel: d['autoLevel'] == null ? null : ResponseLevel.fromValue(d['autoLevel'] as int),
+      autoLevel: d['autoLevel'] == null
+          ? null
+          : ResponseLevel.fromValue(d['autoLevel'] as int),
       durationSec: d['durationSec'] as int,
       createdAt: (d['createdAt'] as Timestamp).toDate(),
       wordsPerMinute: (d['wordsPerMinute'] as num?)?.toDouble(),
@@ -72,25 +77,44 @@ class AssessmentResult extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'classId': classId,
-        'sessionId': sessionId,
-        'studentId': studentId,
-        'teacherId': teacherId,
-        'subject': subject.name,
-        'language': language.name,
-        'level': level.value,
-        'autoLevel': autoLevel?.value,
-        'durationSec': durationSec,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'wordsPerMinute': wordsPerMinute,
-        'accuracy': accuracy,
-        'errorWords': errorWords,
-        'itemsCorrect': itemsCorrect,
-        'itemsTotal': itemsTotal,
-        'notes': notes,
-      };
+    'schoolId': schoolId,
+    'classId': classId,
+    'sessionId': sessionId,
+    'studentId': studentId,
+    'teacherId': teacherId,
+    'subject': subject.name,
+    'language': language.name,
+    'level': level.value,
+    'autoLevel': autoLevel?.value,
+    'durationSec': durationSec,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'wordsPerMinute': wordsPerMinute,
+    'accuracy': accuracy,
+    'errorWords': errorWords,
+    'itemsCorrect': itemsCorrect,
+    'itemsTotal': itemsTotal,
+    'notes': notes,
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, classId, sessionId, studentId, teacherId, subject, language, level, autoLevel, durationSec, createdAt, wordsPerMinute, accuracy, errorWords, itemsCorrect, itemsTotal, notes];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    classId,
+    sessionId,
+    studentId,
+    teacherId,
+    subject,
+    language,
+    level,
+    autoLevel,
+    durationSec,
+    createdAt,
+    wordsPerMinute,
+    accuracy,
+    errorWords,
+    itemsCorrect,
+    itemsTotal,
+    notes,
+  ];
 }

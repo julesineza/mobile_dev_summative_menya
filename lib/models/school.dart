@@ -9,7 +9,11 @@ class School extends Equatable {
 
   factory School.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
-    return School(id: doc.id, name: d['name'] as String, district: d['district'] as String?);
+    return School(
+      id: doc.id,
+      name: d['name'] as String,
+      district: d['district'] as String?,
+    );
   }
 
   Map<String, dynamic> toMap() => {'name': name, 'district': district};

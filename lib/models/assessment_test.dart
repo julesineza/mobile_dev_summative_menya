@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 class TestQuestion extends Equatable {
@@ -7,8 +8,10 @@ class TestQuestion extends Equatable {
   final String prompt; // "12 ÷ 3 = ?"
   final String answer; // "4"
 
-  factory TestQuestion.fromMap(Map<String, dynamic> m) =>
-      TestQuestion(prompt: m['prompt'] as String, answer: m['answer'] as String);
+  factory TestQuestion.fromMap(Map<String, dynamic> m) => TestQuestion(
+    prompt: m['prompt'] as String,
+    answer: m['answer'] as String,
+  );
 
   Map<String, dynamic> toMap() => {'prompt': prompt, 'answer': answer};
 
@@ -48,7 +51,9 @@ class AssessmentTest extends Equatable {
       .where((w) => w.isNotEmpty)
       .length;
 
-  factory AssessmentTest.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory AssessmentTest.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return AssessmentTest(
       id: doc.id,
@@ -67,17 +72,28 @@ class AssessmentTest extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'createdBy': createdBy,
-        'title': title,
-        'subject': subject.name,
-        'language': language.name,
-        'grade': grade,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'passageText': passageText,
-        'questions': questions.map((q) => q.toMap()).toList(),
-      };
+    'schoolId': schoolId,
+    'createdBy': createdBy,
+    'title': title,
+    'subject': subject.name,
+    'language': language.name,
+    'grade': grade,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'passageText': passageText,
+    'questions': questions.map((q) => q.toMap()).toList(),
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, createdBy, title, subject, language, grade, createdAt, passageText, questions];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    createdBy,
+    title,
+    subject,
+    language,
+    grade,
+    createdAt,
+    passageText,
+    questions,
+  ];
 }

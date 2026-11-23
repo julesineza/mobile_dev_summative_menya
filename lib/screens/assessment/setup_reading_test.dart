@@ -262,220 +262,221 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
               child: classNames.isEmpty
                   ? const NoClassPrompt()
                   : ListView(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
-                children: [
-                  Text(
-                    'Set up a test',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      color: context.assessmentColors.text,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Choose what learners will read or solve.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: context.assessmentColors.secondaryText,
-                    ),
-                  ),
-                  SizedBox(height: 20),
+                      padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      children: [
+                        Text(
+                          'Set up a test',
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: context.assessmentColors.text,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Choose what learners will read or solve.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: context.assessmentColors.secondaryText,
+                          ),
+                        ),
+                        SizedBox(height: 20),
 
-                  // Subject toggle
-                  _segmented(
-                    left: 'Soma · Reading',
-                    right: 'Imibare · Math',
-                    selectedLeft: true,
-                    onTapLeft: () {},
-                    onTapRight: () {
-                      context.pushReplacement(AppRoutes.setupMath);
-                    },
-                  ),
-                  SizedBox(height: 20),
+                        // Subject toggle
+                        _segmented(
+                          left: 'Soma · Reading',
+                          right: 'Imibare · Math',
+                          selectedLeft: true,
+                          onTapLeft: () {},
+                          onTapRight: () {
+                            context.pushReplacement(AppRoutes.setupMath);
+                          },
+                        ),
+                        SizedBox(height: 20),
 
-                  _label('Test name'),
-                  _textField(testNameController, border),
-                  SizedBox(height: 16),
+                        _label('Test name'),
+                        _textField(testNameController, border),
+                        SizedBox(height: 16),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            _label('Class'),
-                            _dropdown(selectedClass, _classNames, (v) {
-                              if (v == null) return;
-                              setState(() => selectedClass = v);
-                              for (final c in _classItems) {
-                                if (c.name == v) {
-                                  _selectClass(c);
-                                  break;
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('Class'),
+                                  _dropdown(selectedClass, _classNames, (v) {
+                                    if (v == null) return;
+                                    setState(() => selectedClass = v);
+                                    for (final c in _classItems) {
+                                      if (c.name == v) {
+                                        _selectClass(c);
+                                        break;
+                                      }
+                                    }
+                                  }, border),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('Language'),
+                                  _dropdown(
+                                    selectedLanguage,
+                                    ['English', 'Kinyarwanda', 'French'],
+                                    (v) =>
+                                        setState(() => selectedLanguage = v!),
+                                    border,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 22),
+
+                        Text(
+                          'Reading content',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: context.assessmentColors.text,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        _segmented(
+                          left: 'Word list',
+                          right: 'Passage',
+                          selectedLeft: contentType == 'Word list',
+                          onTapLeft: () {
+                            if (contentType != 'Word list') {
+                              setState(() {
+                                contentType = 'Word list';
+                                if (wordsController.text.trim().isEmpty) {
+                                  wordsController.text = 'school, books, story, brother, carry, mango, tree, walk, read, together';
                                 }
-                              }
-                            }, border),
-                          ],
+                              });
+                            }
+                          },
+                          onTapRight: () {
+                            if (contentType != 'Passage') {
+                              setState(() {
+                                contentType = 'Passage';
+                                if (wordsController.text.contains(',')) {
+                                  wordsController.text = 'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.';
+                                }
+                              });
+                            }
+                          },
                         ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _label('Language'),
-                            _dropdown(
-                              selectedLanguage,
-                              ['English', 'Kinyarwanda', 'French'],
-                              (v) => setState(() => selectedLanguage = v!),
-                              border,
+                        SizedBox(height: 16),
+
+                        _label(
+                          contentType == 'Word list'
+                              ? 'Words to read'
+                              : 'Passage to read',
+                        ),
+                        TextField(
+                          controller: wordsController,
+                          maxLines: 4,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: context.assessmentColors.surface,
+                            hintText: contentType == 'Word list'
+                                ? 'Enter words separated by commas...'
+                                : 'Enter passage sentences for pupils to read aloud...',
+                            hintStyle: TextStyle(
+                              color: context.assessmentColors.hint,
+                              fontSize: 14,
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 22),
-
-                  Text(
-                    'Reading content',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: context.assessmentColors.text,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  _segmented(
-                    left: 'Word list',
-                    right: 'Passage',
-                    selectedLeft: contentType == 'Word list',
-                    onTapLeft: () {
-                      if (contentType != 'Word list') {
-                        setState(() {
-                          contentType = 'Word list';
-                          if (wordsController.text.trim().isEmpty) {
-                            wordsController.text = 'school, books, story, brother, carry, mango, tree, walk, read, together';
-                          }
-                        });
-                      }
-                    },
-                    onTapRight: () {
-                      if (contentType != 'Passage') {
-                        setState(() {
-                          contentType = 'Passage';
-                          if (wordsController.text.contains(',')) {
-                            wordsController.text = 'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.';
-                          }
-                        });
-                      }
-                    },
-                  ),
-                  SizedBox(height: 16),
-
-                  _label(
-                    contentType == 'Word list'
-                        ? 'Words to read'
-                        : 'Passage to read',
-                  ),
-                  TextField(
-                    controller: wordsController,
-                    maxLines: 4,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: context.assessmentColors.surface,
-                      hintText: contentType == 'Word list'
-                          ? 'Enter words separated by commas...'
-                          : 'Enter passage sentences for pupils to read aloud...',
-                      hintStyle: TextStyle(
-                        color: context.assessmentColors.hint,
-                        fontSize: 14,
-                      ),
-                      contentPadding: EdgeInsets.all(16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: green, width: 1.5),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    contentType == 'Word list'
-                        ? '$wordCount words · Separate words with commas.'
-                        : '$wordCount words in passage.',
-                    style: TextStyle(
-                      color: context.assessmentColors.secondaryText,
-                      fontSize: 13,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-
-                  // Timer Card
-                  _timerCard(
-                    title: 'Per reading',
-                    options: const ['Count up', '60 sec', 'Custom'],
-                    selected: timerMode,
-                    onSelect: (v) => setState(() => timerMode = v),
-                    border: border,
-                    green: green,
-                  ),
-                  SizedBox(height: 24),
-
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _saveTest,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isSaving
-                          ? SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              'Save test',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
+                            contentPadding: EdgeInsets.all(16),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: border),
                             ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: green, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          contentType == 'Word list'
+                              ? '$wordCount words · Separate words with commas.'
+                              : '$wordCount words in passage.',
+                          style: TextStyle(
+                            color: context.assessmentColors.secondaryText,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+
+                        // Timer Card
+                        _timerCard(
+                          title: 'Per reading',
+                          options: const ['Count up', '60 sec', 'Custom'],
+                          selected: timerMode,
+                          onSelect: (v) => setState(() => timerMode = v),
+                          border: border,
+                          green: green,
+                        ),
+                        SizedBox(height: 24),
+
+                        // Save Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            onPressed: _isSaving ? null : _saveTest,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: green,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isSaving
+                                ? SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Save test',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Center(
+                          child: Text(
+                            'Saved tests are available when starting a check.',
+                            style: TextStyle(
+                              color: context.assessmentColors.secondaryText,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                      ],
                     ),
-                  ),
-                  SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      'Saved tests are available when starting a check.',
-                      style: TextStyle(
-                        color: context.assessmentColors.secondaryText,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                ],
-              ),
             ),
           ],
         ),

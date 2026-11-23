@@ -190,10 +190,7 @@ class AssessmentService {
     );
 
     if (sessionDoc != null) {
-      _syncInBackground(
-        'createSession',
-        () => sessionDoc.set(session.toMap()),
-      );
+      _syncInBackground('createSession', () => sessionDoc.set(session.toMap()));
     }
     return session;
   }
@@ -246,14 +243,10 @@ class AssessmentService {
     if (firestore != null && resultDoc != null) {
       final batch = firestore.batch();
       batch.set(resultDoc, result.toMap());
-      batch.set(
-        firestore.collection(FirestorePaths.students).doc(studentId),
-        {
-          'status': supportStatusFromLevel(level).name,
-          'lastAssessedAt': Timestamp.fromDate(result.createdAt),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(firestore.collection(FirestorePaths.students).doc(studentId), {
+        'status': supportStatusFromLevel(level).name,
+        'lastAssessedAt': Timestamp.fromDate(result.createdAt),
+      }, SetOptions(merge: true));
       _syncInBackground('saveResult', batch.commit);
     }
     return result;
@@ -348,8 +341,7 @@ class AssessmentService {
       subject: Subject.reading,
       grade: grade,
       createdAt: DateTime.now(),
-      passageText:
-          'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.',
+      passageText: 'Amina walks to school with her brother. They carry books and read a story together under the big mango tree.',
     );
   }
 }

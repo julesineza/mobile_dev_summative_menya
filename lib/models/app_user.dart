@@ -3,7 +3,12 @@ import 'package:equatable/equatable.dart';
 
 /// A teacher. Their classes are found with: classes where teacherId == uid.
 class AppUser extends Equatable {
-  const AppUser({required this.uid, required this.name, required this.email, required this.schoolId});
+  const AppUser({
+    required this.uid,
+    required this.name,
+    required this.email,
+    required this.schoolId,
+  });
   final String uid; // PK = Firebase Auth uid
   final String name;
   final String email;
@@ -19,7 +24,11 @@ class AppUser extends Equatable {
     );
   }
 
-  Map<String, dynamic> toMap() => {'name': name, 'email': email, 'schoolId': schoolId};
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'email': email,
+    'schoolId': schoolId,
+  };
 
   @override
   List<Object?> get props => [uid, name, email, schoolId];

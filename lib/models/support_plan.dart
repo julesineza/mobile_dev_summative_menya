@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 class SupportPlan extends Equatable {
@@ -28,7 +29,9 @@ class SupportPlan extends Equatable {
   final DateTime? recheckDate;
   final PlanStatus status;
 
-  factory SupportPlan.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SupportPlan.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return SupportPlan(
       id: doc.id,
@@ -46,18 +49,32 @@ class SupportPlan extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'classId': classId,
-        'studentId': studentId,
-        'resultId': resultId,
-        'teacherId': teacherId,
-        'focus': focus,
-        'practiceType': practiceType,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'recheckDate': recheckDate == null ? null : Timestamp.fromDate(recheckDate!),
-        'status': status.name,
-      };
+    'schoolId': schoolId,
+    'classId': classId,
+    'studentId': studentId,
+    'resultId': resultId,
+    'teacherId': teacherId,
+    'focus': focus,
+    'practiceType': practiceType,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'recheckDate': recheckDate == null
+        ? null
+        : Timestamp.fromDate(recheckDate!),
+    'status': status.name,
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, classId, studentId, resultId, teacherId, focus, practiceType, createdAt, recheckDate, status];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    classId,
+    studentId,
+    resultId,
+    teacherId,
+    focus,
+    practiceType,
+    createdAt,
+    recheckDate,
+    status,
+  ];
 }

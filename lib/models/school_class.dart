@@ -18,7 +18,9 @@ class SchoolClass extends Equatable {
   final int grade; // 1..6
   final String? academicYear; // "2026"
 
-  factory SchoolClass.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SchoolClass.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return SchoolClass(
       id: doc.id,
@@ -31,13 +33,20 @@ class SchoolClass extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'teacherId': teacherId,
-        'name': name,
-        'grade': grade,
-        'academicYear': academicYear,
-      };
+    'schoolId': schoolId,
+    'teacherId': teacherId,
+    'name': name,
+    'grade': grade,
+    'academicYear': academicYear,
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, teacherId, name, grade, academicYear];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    teacherId,
+    name,
+    grade,
+    academicYear,
+  ];
 }

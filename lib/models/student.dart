@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 class Student extends Equatable {
@@ -14,7 +15,8 @@ class Student extends Equatable {
   });
   final String id; // PK
   final String schoolId; // FK -> schools (kept for easy security rules)
-  final String classId; // FK -> classes (a student belongs to exactly one class)
+  final String
+  classId; // FK -> classes (a student belongs to exactly one class)
   final String name;
   final int rollNo;
   final SupportStatus status; // updated after each graded result
@@ -34,15 +36,24 @@ class Student extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'classId': classId,
-        'name': name,
-        'rollNo': rollNo,
-        'status': status.name,
-        'lastAssessedAt':
-            lastAssessedAt == null ? null : Timestamp.fromDate(lastAssessedAt!),
-      };
+    'schoolId': schoolId,
+    'classId': classId,
+    'name': name,
+    'rollNo': rollNo,
+    'status': status.name,
+    'lastAssessedAt': lastAssessedAt == null
+        ? null
+        : Timestamp.fromDate(lastAssessedAt!),
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, classId, name, rollNo, status, lastAssessedAt];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    classId,
+    name,
+    rollNo,
+    status,
+    lastAssessedAt,
+  ];
 }

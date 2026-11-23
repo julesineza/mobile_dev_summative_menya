@@ -78,9 +78,7 @@ void main() {
 
   group('StatusBadge', () {
     for (final status in SupportStatus.values) {
-      testWidgets('${status.name} shows its label in capitals', (
-        tester,
-      ) async {
+      testWidgets('${status.name} shows its label in capitals', (tester) async {
         await _pump(tester, StatusBadge(status: status));
 
         expect(find.text(status.label.toUpperCase()), findsOneWidget);
@@ -128,9 +126,7 @@ void main() {
   });
 
   group('FilterPill', () {
-    testWidgets('shows the label and calls onTap when tapped', (
-      tester,
-    ) async {
+    testWidgets('shows the label and calls onTap when tapped', (tester) async {
       var taps = 0;
       await _pump(
         tester,
@@ -178,9 +174,7 @@ void main() {
   });
 
   group('StudentRow', () {
-    testWidgets('shows name, subtitle, initials and a chevron', (
-      tester,
-    ) async {
+    testWidgets('shows name, subtitle, initials and a chevron', (tester) async {
       await _pump(
         tester,
         const StudentRow(student: _samir, subtitle: 'Class P4 Blue'),

@@ -103,8 +103,7 @@ class StartAssessment extends StatelessWidget {
                         children: provider.hasClass
                             ? [
                                 TextSpan(
-                                  text:
-                                      'Select a subject to begin a quick check. Class ',
+                                  text: 'Select a subject to begin a quick check. Class ',
                                 ),
                                 TextSpan(
                                   text: provider.selectedClassName,
@@ -117,8 +116,7 @@ class StartAssessment extends StatelessWidget {
                               ]
                             : [
                                 TextSpan(
-                                  text:
-                                      'No class selected. Create or choose a class to start a quick check.',
+                                  text: 'No class selected. Create or choose a class to start a quick check.',
                                 ),
                               ],
                       ),

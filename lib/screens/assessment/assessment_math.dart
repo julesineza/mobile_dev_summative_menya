@@ -51,9 +51,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            error is Failure
-                ? error.message
-                : 'Could not start the session. It will be retried when you save.',
+            error is Failure ? error.message : 'Could not start the session. It will be retried when you save.',
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),

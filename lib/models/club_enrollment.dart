@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 import 'enums.dart';
 
 /// "Student X is in club Y." One document per student per club.
@@ -24,10 +25,13 @@ class ClubEnrollment extends Equatable {
   final String studentId; // FK -> students
   final String enrolledBy; // FK -> users
   final DateTime enrolledAt;
-  final String? resultId; // FK -> assessmentResults (the poor result that triggered it)
+  final String?
+  resultId; // FK -> assessmentResults (the poor result that triggered it)
   final EnrollmentStatus status;
 
-  factory ClubEnrollment.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory ClubEnrollment.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data()!;
     return ClubEnrollment(
       id: doc.id,
@@ -43,16 +47,26 @@ class ClubEnrollment extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'schoolId': schoolId,
-        'classId': classId,
-        'clubId': clubId,
-        'studentId': studentId,
-        'enrolledBy': enrolledBy,
-        'enrolledAt': Timestamp.fromDate(enrolledAt),
-        'resultId': resultId,
-        'status': status.name,
-      };
+    'schoolId': schoolId,
+    'classId': classId,
+    'clubId': clubId,
+    'studentId': studentId,
+    'enrolledBy': enrolledBy,
+    'enrolledAt': Timestamp.fromDate(enrolledAt),
+    'resultId': resultId,
+    'status': status.name,
+  };
 
   @override
-  List<Object?> get props => [id, schoolId, classId, clubId, studentId, enrolledBy, enrolledAt, resultId, status];
+  List<Object?> get props => [
+    id,
+    schoolId,
+    classId,
+    clubId,
+    studentId,
+    enrolledBy,
+    enrolledAt,
+    resultId,
+    status,
+  ];
 }

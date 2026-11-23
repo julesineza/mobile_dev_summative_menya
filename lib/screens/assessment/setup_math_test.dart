@@ -209,347 +209,362 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
               child: classes.isEmpty
                   ? const NoClassPrompt()
                   : ListView(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
-                children: [
-                  Text(
-                    'Set up a test',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      color: context.assessmentColors.text,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Choose what learners will read or solve.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: context.assessmentColors.secondaryText,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-
-                  // Segmented Subject Switcher
-                  Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: context.assessmentColors.barBorder,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
+                      padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                       children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              context.pushReplacement(AppRoutes.setupReading);
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 10),
+                        Text(
+                          'Set up a test',
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: context.assessmentColors.text,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Choose what learners will read or solve.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: context.assessmentColors.secondaryText,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+
+                        // Segmented Subject Switcher
+                        Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: context.assessmentColors.barBorder,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    context.pushReplacement(
+                                      AppRoutes.setupReading,
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    child: Text(
+                                      'Soma · Reading',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: context
+                                            .assessmentColors
+                                            .secondaryText,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: green,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    'Imibare · Math',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 20),
+
+                        // Test Name
+                        Text(
+                          'Test name',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: context.assessmentColors.text,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        TextField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: context.assessmentColors.surface,
+                            contentPadding: EdgeInsets.all(16),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
+                              borderSide: BorderSide(color: green, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // Class Selector Dropdown
+                        Text(
+                          'Target class',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: context.assessmentColors.text,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: context.assessmentColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: border),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedClass,
+                              isExpanded: true,
+                              items: _dropdownClasses
+                                  .map(
+                                    (cls) => DropdownMenuItem(
+                                      value: cls.name,
+                                      child: Text(
+                                        'Class ${cls.name}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) {
+                                if (v != null) {
+                                  setState(() {
+                                    _selectedClass = v;
+                                    _nameController.text =
+                                        '$_selectedClass · Math practice';
+                                  });
+                                  SchoolClass? match;
+                                  for (final c in _dropdownClasses) {
+                                    if (c.name == v) {
+                                      match = c;
+                                      break;
+                                    }
+                                  }
+                                  if (match != null) _selectClass(match);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 24),
+
+                        // Questions Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Math questions',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: context.assessmentColors.text,
+                              ),
+                            ),
+                            Text(
+                              '${_questions.length} questions',
+                              style: TextStyle(
+                                color: context.assessmentColors.secondaryText,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
                               child: Text(
-                                'Soma · Reading',
+                                'Question / Problem',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: context.assessmentColors.secondaryText,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                'Answer',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: context.assessmentColors.secondaryText,
+                                  fontSize: 13,
                                 ),
                               ),
                             ),
-                          ),
+                            SizedBox(width: 44),
+                          ],
                         ),
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: green,
-                              borderRadius: BorderRadius.circular(10),
+                        SizedBox(height: 8),
+
+                        // Questions Form
+                        ...List.generate(_questions.length, (i) {
+                          final q = _questions[i];
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: TextField(
+                                    controller: q.prompt,
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor:
+                                          context.assessmentColors.surface,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 14,
+                                      ),
+                                      prefix: Text(
+                                        '${i + 1}.  ',
+                                        style: TextStyle(
+                                          color: context
+                                              .assessmentColors
+                                              .secondaryText,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: border),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: border),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(12),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: green,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  flex: 1,
+                                  child: TextField(
+                                    controller: q.answer,
+                                    textAlign: TextAlign.center,
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor:
+                                          context.assessmentColors.surface,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: border),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: border),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(12),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: green,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: _questions.length > 1
+                                      ? () {
+                                          setState(() {
+                                            final removed = _questions.removeAt(
+                                              i,
+                                            );
+                                            removed.dispose();
+                                          });
+                                        }
+                                      : null,
+                                  icon: Icon(
+                                    Icons.remove_circle_outline,
+                                    color: _questions.length > 1
+                                        ? context.assessmentColors.warningStroke
+                                        : context.assessmentColors.border,
+                                    size: 22,
+                                  ),
+                                  tooltip: 'Remove',
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              'Imibare · Math',
-                              textAlign: TextAlign.center,
+                          );
+                        }),
+
+                        SizedBox(height: 6),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: TextButton.icon(
+                            onPressed: () => setState(
+                              () => _questions.add(_MathQuestionItem()),
+                            ),
+                            icon: Icon(Icons.add, color: green, size: 20),
+                            label: Text(
+                              'Add question',
                               style: TextStyle(
+                                color: green,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                fontSize: 15,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor:
+                                  context.assessmentColors.primarySoft,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: context.assessmentColors.primaryBorder,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  SizedBox(height: 20),
-
-                  // Test Name
-                  Text(
-                    'Test name',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: context.assessmentColors.text,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: context.assessmentColors.surface,
-                      contentPadding: EdgeInsets.all(16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                        borderSide: BorderSide(color: green, width: 1.5),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-
-                  // Class Selector Dropdown
-                  Text(
-                    'Target class',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: context.assessmentColors.text,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: context.assessmentColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedClass,
-                        isExpanded: true,
-                        items: _dropdownClasses
-                            .map(
-                              (cls) => DropdownMenuItem(
-                                value: cls.name,
-                                child: Text(
-                                  'Class ${cls.name}',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() {
-                              _selectedClass = v;
-                              _nameController.text =
-                                  '$_selectedClass · Math practice';
-                            });
-                            SchoolClass? match;
-                            for (final c in _dropdownClasses) {
-                              if (c.name == v) {
-                                match = c;
-                                break;
-                              }
-                            }
-                            if (match != null) _selectClass(match);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 24),
-
-                  // Questions Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Math questions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: context.assessmentColors.text,
-                        ),
-                      ),
-                      Text(
-                        '${_questions.length} questions',
-                        style: TextStyle(
-                          color: context.assessmentColors.secondaryText,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Question / Problem',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: context.assessmentColors.secondaryText,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        flex: 1,
-                        child: Text(
-                          'Answer',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: context.assessmentColors.secondaryText,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 44),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-
-                  // Questions Form
-                  ...List.generate(_questions.length, (i) {
-                    final q = _questions[i];
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: TextField(
-                              controller: q.prompt,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: context.assessmentColors.surface,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 14,
-                                ),
-                                prefix: Text(
-                                  '${i + 1}.  ',
-                                  style: TextStyle(
-                                    color:
-                                        context.assessmentColors.secondaryText,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: border),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: border),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(12),
-                                  ),
-                                  borderSide: BorderSide(
-                                    color: green,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            flex: 1,
-                            child: TextField(
-                              controller: q.answer,
-                              textAlign: TextAlign.center,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: context.assessmentColors.surface,
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: border),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: border),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(12),
-                                  ),
-                                  borderSide: BorderSide(
-                                    color: green,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: _questions.length > 1
-                                ? () {
-                                    setState(() {
-                                      final removed = _questions.removeAt(i);
-                                      removed.dispose();
-                                    });
-                                  }
-                                : null,
-                            icon: Icon(
-                              Icons.remove_circle_outline,
-                              color: _questions.length > 1
-                                  ? context.assessmentColors.warningStroke
-                                  : context.assessmentColors.border,
-                              size: 22,
-                            ),
-                            tooltip: 'Remove',
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-
-                  SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: TextButton.icon(
-                      onPressed: () =>
-                          setState(() => _questions.add(_MathQuestionItem())),
-                      icon: Icon(Icons.add, color: green, size: 20),
-                      label: Text(
-                        'Add question',
-                        style: TextStyle(
-                          color: green,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        backgroundColor: context.assessmentColors.primarySoft,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: context.assessmentColors.primaryBorder,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
 
             // Bottom Save Button
