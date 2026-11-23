@@ -78,12 +78,15 @@ class _AssessmentReadingState extends State<AssessmentReading> {
     }
   }
 
-  void _skipLearner() {
+  Future<void> _skipLearner() async {
     final provider = context.read<AssessmentProvider>();
     if (provider.hasNextLearner) {
       provider.skipCurrentLearner();
       context.pushReplacement(AppRoutes.prepareReading);
     } else {
+      // Last learner skipped: close the session so it is not left open.
+      await provider.finishSession();
+      if (!mounted) return;
       context.go(AppRoutes.assess);
     }
   }
@@ -207,9 +210,9 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                         _MetricItem(
                           value: '${accuracy.toStringAsFixed(0)}%',
                           label: 'Accuracy',
-                          color: accuracy >= 90
+                          color: accuracy >= Grading.proficientCutoff
                               ? green
-                              : (accuracy >= 70
+                              : (accuracy >= Grading.developingCutoff
                                     ? Colors.amber.shade800
                                     : context.assessmentColors.warningStroke),
                         ),
@@ -467,9 +470,10 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                       ),
                     ),
                     child: Text(
-                      '1  Struggling — accuracy < 70%, needs frequent help\n'
-                      '2  Developing — accuracy 70-89%, reads with support\n'
-                      '3  Proficient — accuracy ≥ 90%, reads independently',
+                      // Same cutoffs as the "Suggested" level (core/grading.dart).
+                      '1  Struggling — accuracy < ${_pct(Grading.developingCutoff)}%, needs frequent help\n'
+                      '2  Developing — accuracy ${_pct(Grading.developingCutoff)}% to under ${_pct(Grading.proficientCutoff)}%, reads with support\n'
+                      '3  Proficient — accuracy ≥ ${_pct(Grading.proficientCutoff)}%, reads independently',
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.6,
@@ -558,6 +562,8 @@ class _AssessmentReadingState extends State<AssessmentReading> {
       ),
     );
   }
+
+  static String _pct(double value) => value.toStringAsFixed(0);
 
   String _responseLevelLabel(ResponseLevel level) => switch (level) {
     ResponseLevel.struggling => 'Struggling',

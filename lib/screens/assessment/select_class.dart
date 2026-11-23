@@ -24,6 +24,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final classProvider = context.read<ClassProvider>();
       setState(() {
         _selectedClassId = classProvider.selectedClass?.id;
@@ -31,11 +32,14 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
     });
   }
 
-  SchoolClass? get selectedClass =>
-      context.watch<ClassProvider>().classes.firstWhere(
-        (c) => c.id == _selectedClassId,
-        orElse: () => context.watch<ClassProvider>().classes.first,
-      );
+  /// The picked class, or null when nothing is picked or the list is empty
+  /// (a teacher with no classes yet must not crash this screen).
+  SchoolClass? _findSelected(List<SchoolClass> classes) {
+    for (final c in classes) {
+      if (c.id == _selectedClassId) return c;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +113,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                   Consumer<ClassProvider>(
                     builder: (_, classProvider, __) {
                       final classes = classProvider.classes;
+                      final picked = _findSelected(classes);
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -121,9 +126,9 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                               letterSpacing: 0.5,
                             ),
                           ),
-                          if (_selectedClassId != null)
+                          if (picked != null)
                             Text(
-                              'Selected: ${classes.firstWhere((c) => c.id == _selectedClassId, orElse: () => classes.first).name}',
+                              'Selected: ${picked.name}',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -140,6 +145,19 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                   Consumer<ClassProvider>(
                     builder: (_, classProvider, __) {
                       final classes = classProvider.classes;
+                      if (classes.isEmpty) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
+                          child: Text(
+                            'You have no classes yet. Add one in Settings → Classes.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: context.assessmentColors.secondaryText,
+                            ),
+                          ),
+                        );
+                      }
                       return Column(
                         children: classes.map((schoolClass) {
                           final isSelected = schoolClass.id == _selectedClassId;
@@ -269,12 +287,9 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                 height: 54,
                 child: Consumer<ClassProvider>(
                   builder: (_, classProvider, __) {
-                    final selectedClass = classProvider.classes.firstWhere(
-                      (c) => c.id == _selectedClassId,
-                      orElse: () => classProvider.classes.first,
-                    );
+                    final selectedClass = _findSelected(classProvider.classes);
                     return ElevatedButton(
-                      onPressed: _selectedClassId == null
+                      onPressed: selectedClass == null
                           ? null
                           : () {
                               final formattedName = selectedClass.name;
@@ -285,6 +300,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                                     name: formattedName,
                                     id: selectedClass.id,
                                     schoolId: selectedClass.schoolId,
+                                    grade: selectedClass.grade,
                                   );
                               // Update ClassProvider selection.
                               context.read<ClassProvider>().select(
@@ -321,7 +337,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                         elevation: 0,
                       ),
                       child: Text(
-                        _selectedClassId == null
+                        selectedClass == null
                             ? 'Select a class'
                             : 'Set ${selectedClass.name} as active class',
                         style: TextStyle(

@@ -44,6 +44,7 @@ List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
           id: selected.id,
           name: selected.name,
           schoolId: selected.schoolId,
+          grade: selected.grade,
         );
       } else if (provider.selectedClassName != settings.activeClass &&
           settings.activeClass.isNotEmpty) {

@@ -36,10 +36,32 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
             schoolId: '',
             teacherId: '',
             name: name,
-            grade: _parseGrade(name),
+            grade: AssessmentProvider.parseGrade(name),
           ),
         )
         .toList();
+  }
+
+  /// Grade of the class picked in the dropdown (real grade when known).
+  int get _selectedGrade {
+    // read (not watch): this runs from button handlers, outside build.
+    for (final c in context.read<ClassProvider>().classes) {
+      if (c.name == selectedClass) return c.grade;
+    }
+    return AssessmentProvider.parseGrade(selectedClass);
+  }
+
+  /// Makes the picked class the active one, so "Start test now" lists its
+  /// learners. Placeholder classes (no school yet) only change the label.
+  void _selectClass(SchoolClass c) {
+    if (c.schoolId.isEmpty) return;
+    context.read<AssessmentProvider>().setSelectedClass(
+      name: c.name,
+      id: c.id,
+      schoolId: c.schoolId,
+      grade: c.grade,
+    );
+    context.read<ClassProvider>().select(c.id);
   }
 
   List<String> get _classNames {
@@ -80,12 +102,6 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     testNameController.dispose();
     wordsController.dispose();
     super.dispose();
-  }
-
-  int _parseGrade(String className) {
-    if (className.contains('1')) return 1;
-    if (className.contains('2')) return 2;
-    return 3;
   }
 
   Language _parseLanguage(String lang) {
@@ -135,7 +151,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
       final createdTest = await provider.saveCustomTest(
         title: title,
         subject: Subject.reading,
-        grade: _parseGrade(selectedClass),
+        grade: _selectedGrade,
         language: _parseLanguage(selectedLanguage),
         passageText: passage,
       );
@@ -296,13 +312,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                               setState(() => selectedClass = v);
                               for (final c in _classItems) {
                                 if (c.name == v) {
-                                  context
-                                      .read<AssessmentProvider>()
-                                      .setSelectedClass(
-                                        name: c.name,
-                                        id: c.id,
-                                        schoolId: c.schoolId,
-                                      );
+                                  _selectClass(c);
                                   break;
                                 }
                               }

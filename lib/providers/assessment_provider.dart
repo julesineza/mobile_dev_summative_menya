@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/failure.dart';
 import '../core/grading.dart';
 import '../models/assessment_result.dart';
 import '../models/assessment_session.dart';
@@ -47,6 +48,10 @@ class AssessmentProvider extends ChangeNotifier {
   String _selectedClassName = 'P3-A';
   String _selectedClassId = fallbackClassId;
   String _selectedSchoolId = fallbackSchoolId;
+
+  /// Real grade of the selected class (from the class document). Null when
+  /// only the class name is known; then the grade is guessed from the name.
+  int? _selectedGrade;
   AssessmentTest? _test;
   AssessmentSession? _session;
   List<AssessmentLearner> _learners = const [];
@@ -62,7 +67,15 @@ class AssessmentProvider extends ChangeNotifier {
   String get selectedClassName => _selectedClassName;
   String get selectedClassId => _selectedClassId;
   String get selectedSchoolId => _selectedSchoolId;
+  int get selectedGrade => _selectedGrade ?? parseGrade(_selectedClassName);
   AssessmentTest? get test => _test;
+
+  /// "English" / "Kinyarwanda" / "French" for the current test's language.
+  String get testLanguageLabel => switch (_test?.language ?? Language.english) {
+    Language.english => 'English',
+    Language.kinyarwanda => 'Kinyarwanda',
+    Language.french => 'French',
+  };
   AssessmentSession? get session => _session;
   List<AssessmentLearner> get learners => _learners;
   int get currentLearnerIndex => _currentLearnerIndex;
@@ -91,6 +104,7 @@ class AssessmentProvider extends ChangeNotifier {
     if (className.isEmpty || _selectedClassName == className) return;
     _selectedClassName = className;
     _selectedClassId = _resolveClassId(className);
+    _selectedGrade = null;
     notifyListeners();
   }
 
@@ -101,52 +115,67 @@ class AssessmentProvider extends ChangeNotifier {
     required String id,
     required String name,
     String? schoolId,
+    int? grade,
   }) {
     final schoolChanged =
         schoolId != null &&
         schoolId.isNotEmpty &&
         schoolId != _selectedSchoolId;
+    final gradeChanged = grade != null && grade != _selectedGrade;
     if (_selectedClassId == id &&
         _selectedClassName == name &&
-        !schoolChanged) {
+        !schoolChanged &&
+        !gradeChanged) {
       return;
     }
-    _selectedClassId = id;
-    _selectedClassName = name;
-    if (schoolId != null && schoolId.isNotEmpty) {
-      _selectedSchoolId = schoolId;
-    }
-    _learners = const [];
-    _currentLearnerIndex = 0;
-    _session = null;
+    _applyClass(id: id, name: name, schoolId: schoolId, grade: grade);
     notifyListeners();
   }
 
+  /// Picks the subject. A test already chosen for the same subject (e.g. a
+  /// custom test just saved on the setup screen) is kept; otherwise the
+  /// default test is loaded again by [prepareAssessment].
   void setSelectedAssessment(UserChoice assessment) {
     _selectedAssessment = assessment;
-    _test = null;
+    if (_test != null && _test!.subject != _subjectFor(assessment)) {
+      _test = null;
+    }
     _session = null;
     _currentLearnerIndex = 0;
     _completedResults = [];
+    _resetLearnerState();
     notifyListeners();
   }
 
+  /// Loads the default test for the selected subject and class grade, unless
+  /// a matching test is already selected.
+  /// Throws a [Failure] (from the service) when the test cannot be loaded.
   Future<void> prepareAssessment() async {
-    if (_test != null) {
+    final subject = _subjectFor(_selectedAssessment);
+    if (_test != null && _test!.subject == subject) {
       notifyListeners();
       return;
     }
-    final subject = _selectedAssessment == UserChoice.math
-        ? Subject.math
-        : Subject.reading;
-
-    final grade = _parseGrade(_selectedClassName);
     _test = await _service.getTest(
       schoolId: _selectedSchoolId,
       subject: subject,
-      grade: grade,
+      grade: selectedGrade,
     );
     notifyListeners();
+  }
+
+  static Subject _subjectFor(UserChoice choice) =>
+      choice == UserChoice.math ? Subject.math : Subject.reading;
+
+  Future<AssessmentTest> _requireTest() async {
+    if (_test == null) await prepareAssessment();
+    final test = _test;
+    if (test == null) {
+      throw const Failure(
+        'Could not load the test. Check your connection and try again.',
+      );
+    }
+    return test;
   }
 
   Future<AssessmentTest> saveCustomTest({
@@ -192,16 +221,31 @@ class AssessmentProvider extends ChangeNotifier {
     required String name,
     required String id,
     String? schoolId,
+    int? grade,
+  }) {
+    _applyClass(id: id, name: name, schoolId: schoolId, grade: grade);
+    notifyListeners();
+  }
+
+  void _applyClass({
+    required String id,
+    required String name,
+    String? schoolId,
+    int? grade,
   }) {
     _selectedClassName = name;
     _selectedClassId = id;
+    _selectedGrade = grade;
     if (schoolId != null && schoolId.isNotEmpty) {
       _selectedSchoolId = schoolId;
+    }
+    // A test written for another grade does not fit the new class.
+    if (_test != null && _test!.grade != selectedGrade) {
+      _test = null;
     }
     _learners = const [];
     _currentLearnerIndex = 0;
     _session = null;
-    notifyListeners();
   }
 
   void setLearners(List<AssessmentLearner> learners) {
@@ -235,9 +279,7 @@ class AssessmentProvider extends ChangeNotifier {
   /// Creates a live assessment session document directly in Cloud Firestore.
   Future<void> ensureSession() async {
     if (_session != null) return;
-    if (_test == null) await prepareAssessment();
-
-    final activeTest = _test!;
+    final activeTest = await _requireTest();
     final studentIds = _learners.map((learner) => learner.id).toList();
 
     _session = await _service.createSession(
@@ -282,8 +324,7 @@ class AssessmentProvider extends ChangeNotifier {
   /// Saves the student reading assessment result directly into Cloud Firestore.
   Future<AssessmentResult> saveReadingResult(ResponseLevel level) async {
     final learner = _requireLearner();
-    if (_test == null) await prepareAssessment();
-    final activeTest = _test!;
+    final activeTest = await _requireTest();
     await ensureSession();
 
     final result = await _service.saveResult(
@@ -313,8 +354,7 @@ class AssessmentProvider extends ChangeNotifier {
     int durationSec = 0,
   }) async {
     final learner = _requireLearner();
-    if (_test == null) await prepareAssessment();
-    final activeTest = _test!;
+    final activeTest = await _requireTest();
     await ensureSession();
 
     final correct = _mathAnswers
@@ -356,15 +396,21 @@ class AssessmentProvider extends ChangeNotifier {
 
   Future<bool> moveToNextLearner() async {
     if (!hasNextLearner) {
-      if (_session != null) {
-        await _service.completeSession(_session!.id);
-      }
+      await finishSession();
       return false;
     }
     _currentLearnerIndex++;
     _resetLearnerState();
     notifyListeners();
     return true;
+  }
+
+  /// Marks the live session as completed (e.g. after the last learner, or
+  /// when the teacher skips the last learner and exits).
+  Future<void> finishSession() async {
+    final session = _session;
+    if (session == null) return;
+    await _service.completeSession(session.id);
   }
 
   void skipCurrentLearner() {
@@ -408,10 +454,11 @@ class AssessmentProvider extends ChangeNotifier {
     return learner;
   }
 
-  int _parseGrade(String className) {
-    if (className.contains('1')) return 1;
-    if (className.contains('2')) return 2;
-    return 3;
+  /// Fallback when only a class name like "P2-A" is known: takes the first
+  /// digit in the name. Defaults to grade 3.
+  static int parseGrade(String className) {
+    final match = RegExp(r'\d+').firstMatch(className);
+    return match == null ? 3 : int.parse(match.group(0)!);
   }
 
   String _initials(String name) {

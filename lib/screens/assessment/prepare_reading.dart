@@ -131,7 +131,7 @@ class PrepareReadingPage extends StatelessWidget {
                                 ),
                                 SizedBox(height: 3),
                                 Text(
-                                  '${learner.className} • English reading',
+                                  '${learner.className} • ${provider.testLanguageLabel} reading',
                                   style: TextStyle(
                                     color:
                                         context.assessmentColors.secondaryText,
@@ -170,7 +170,7 @@ class PrepareReadingPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'ENGLISH PASSAGE (LEVEL 2)',
+                        '${provider.testLanguageLabel.toUpperCase()} PASSAGE (GRADE ${test?.grade ?? provider.selectedGrade})',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,

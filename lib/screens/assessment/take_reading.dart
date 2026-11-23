@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../core/failure.dart';
 import '../../core/theme/assessment_colors.dart';
 import '../../providers/assessment_provider.dart';
 
@@ -31,9 +32,56 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
 
   Future<void> _initSession() async {
     final provider = context.read<AssessmentProvider>();
-    if (provider.test == null) await provider.prepareAssessment();
-    await provider.ensureSession();
+    try {
+      // ensureSession loads the test first if needed (awaited, in order).
+      await provider.ensureSession();
+    } catch (error) {
+      debugPrint('[TakeReading] session error: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is Failure
+                ? error.message
+                : 'Could not start the session. It will be retried when you save.',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
+
+  /// Leaving discards the taps and time for this learner, so ask first.
+  Future<void> _confirmLeave() async {
+    _pauseTimer();
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Leave this reading check?'),
+        content: Text(
+          'The timer and marked words for this learner will not be saved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (leave == true) {
+      context.pop();
+    }
+  }
+
+  /// "brother." and "brother" are the same word for error tracking.
+  static String _cleanWord(String word) =>
+      word.replaceAll(RegExp(r"^[^\p{L}\p{N}']+|[^\p{L}\p{N}']+$", unicode: true), '');
 
   void _startTimer() {
     _timer?.cancel();
@@ -82,7 +130,10 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
     final provider = context.read<AssessmentProvider>();
     final words = _passageWords();
     provider.setReadingCapture(
-      errorWords: _errorIndexes.map((index) => words[index]).toList(),
+      errorWords: (_errorIndexes.toList()..sort())
+          .map((index) => _cleanWord(words[index]))
+          .where((word) => word.isNotEmpty)
+          .toList(),
       durationSec: _elapsedSeconds,
     );
     context.pushReplacement(AppRoutes.assessReading);
@@ -116,15 +167,12 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      _pauseTimer();
-                      context.pop();
-                    },
+                    onTap: _confirmLeave,
                     child: Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
                         Text(
-                          'Save & leave',
+                          'Leave',
                           style: TextStyle(
                             color: green,
                             fontWeight: FontWeight.w700,
@@ -216,7 +264,7 @@ class _ReadingPausedPageState extends State<ReadingPausedPage> {
                                   ),
                                 ),
                                 Text(
-                                  '${learner.className} • English reading',
+                                  '${learner.className} • ${provider.testLanguageLabel} reading',
                                   style: TextStyle(
                                     color:
                                         context.assessmentColors.secondaryText,

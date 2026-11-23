@@ -62,10 +62,28 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
     super.dispose();
   }
 
-  int _parseGrade(String className) {
-    if (className.contains('1')) return 1;
-    if (className.contains('2')) return 2;
-    return 3;
+  int _parseGrade(String className) => AssessmentProvider.parseGrade(className);
+
+  /// Grade of the class picked in the dropdown (real grade when known).
+  int get _selectedGrade {
+    // read (not watch): this runs from button handlers, outside build.
+    for (final c in context.read<ClassProvider>().classes) {
+      if (c.name == _selectedClass) return c.grade;
+    }
+    return _parseGrade(_selectedClass);
+  }
+
+  /// Makes the picked class the active one, so the learner list matches.
+  /// Placeholder classes (no school yet) only change the label.
+  void _selectClass(SchoolClass c) {
+    if (c.schoolId.isEmpty) return;
+    context.read<AssessmentProvider>().setSelectedClass(
+      name: c.name,
+      id: c.id,
+      schoolId: c.schoolId,
+      grade: c.grade,
+    );
+    context.read<ClassProvider>().select(c.id);
   }
 
   List<SchoolClass> get _classItems {
@@ -140,7 +158,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
       final createdTest = await provider.saveCustomTest(
         title: title,
         subject: Subject.math,
-        grade: _parseGrade(_selectedClass),
+        grade: _selectedGrade,
         language: Language.english,
         questions: validQuestions,
       );
@@ -354,15 +372,7 @@ class _TestSetupMathPageState extends State<TestSetupMathPage> {
                                 break;
                               }
                             }
-                            if (match != null) {
-                              context
-                                  .read<AssessmentProvider>()
-                                  .setSelectedClass(
-                                    name: match.name,
-                                    id: match.id,
-                                    schoolId: match.schoolId,
-                                  );
-                            }
+                            if (match != null) _selectClass(match);
                           }
                         },
                       ),

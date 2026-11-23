@@ -153,8 +153,8 @@ class AssessmentService {
   }
 
   /// Fetches students belonging to a class directly from Cloud Firestore.
-  /// If the class has no student documents in Firestore yet, seeds them directly to Firestore
-  /// so that Firestore is immediately populated as the single source of truth.
+  /// An empty class returns an empty list (the screen shows an empty state);
+  /// we never write sample students into a real class.
   Future<List<Student>> getStudents({
     required String classId,
     required String schoolId,
@@ -169,18 +169,9 @@ class AssessmentService {
           .where('classId', isEqualTo: classId)
           .get();
 
-      if (snapshot.docs.isNotEmpty) {
-        final list = snapshot.docs.map(Student.fromFirestore).toList();
-        list.sort((a, b) => a.rollNo.compareTo(b.rollNo));
-        return list;
-      }
-
-      // Seed students directly into Firestore
-      final seeded = await _seedInitialStudentsForClass(
-        schoolId: schoolId,
-        classId: classId,
-      );
-      return seeded;
+      final list = snapshot.docs.map(Student.fromFirestore).toList();
+      list.sort((a, b) => a.rollNo.compareTo(b.rollNo));
+      return list;
     } catch (e) {
       debugPrint('[AssessmentService] getStudents error from Firestore: $e');
       throw const Failure(
@@ -333,54 +324,9 @@ class AssessmentService {
     }
   }
 
-  /// Seeds sample students directly into Firestore `students` collection.
-  Future<List<Student>> _seedInitialStudentsForClass({
-    required String schoolId,
-    required String classId,
-  }) async {
-    final firestore = _firestore;
-    if (firestore == null) return const [];
-
-    final samples = [
-      {'name': 'Bruno Niyonsaba', 'rollNo': 1},
-      {'name': 'Fiona Uwase', 'rollNo': 2},
-      {'name': 'Aliane Umutoni', 'rollNo': 3},
-      {'name': 'Cynthia Gisa', 'rollNo': 4},
-      {'name': 'Eric Bizimana', 'rollNo': 5},
-      {'name': 'David Mugisha', 'rollNo': 6},
-    ];
-
-    final batch = firestore.batch();
-    final List<Student> seededStudents = [];
-
-    for (final sample in samples) {
-      final docRef = firestore.collection(FirestorePaths.students).doc();
-      final student = Student(
-        id: docRef.id,
-        schoolId: schoolId,
-        classId: classId,
-        name: sample['name'] as String,
-        rollNo: sample['rollNo'] as int,
-        status: SupportStatus.onTrack,
-      );
-      batch.set(docRef, student.toMap());
-      seededStudents.add(student);
-    }
-
-    try {
-      await batch.commit();
-      debugPrint(
-        '[AssessmentService] Seeded ${seededStudents.length} students into Firestore for class $classId',
-      );
-    } catch (e) {
-      debugPrint(
-        '[AssessmentService] Error seeding students into Firestore: $e',
-      );
-    }
-
-    return seededStudents;
-  }
-
+  /// Built-in test used when a school has none yet. The id includes the
+  /// school so two schools never try to write the same document (Firestore
+  /// rules would reject the second school's write).
   AssessmentTest _buildDefaultTest({
     required String schoolId,
     required Subject subject,
@@ -388,7 +334,7 @@ class AssessmentService {
   }) {
     if (subject == Subject.math) {
       return AssessmentTest(
-        id: 'math-grade-$grade-default',
+        id: '$schoolId-math-grade-$grade-default',
         schoolId: schoolId,
         createdBy: 'teacher-system',
         title: 'P$grade · Math Quick Check',
@@ -405,7 +351,7 @@ class AssessmentService {
     }
 
     return AssessmentTest(
-      id: 'reading-grade-$grade-default',
+      id: '$schoolId-reading-grade-$grade-default',
       schoolId: schoolId,
       createdBy: 'teacher-system',
       title: 'P$grade · English Reading Check',
