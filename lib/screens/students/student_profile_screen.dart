@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
 import '../../core/view_state.dart';
 import '../../models/assessment_result.dart';
@@ -128,6 +129,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                   _SubjectCard(subject: Subject.reading, results: results),
                   const SizedBox(height: 12),
                   _SubjectCard(subject: Subject.math, results: results),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(AppRoutes.historyPath(s.id)),
+                    icon: const Icon(Icons.history),
+                    label: const Text('Review & support plans'),
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Assessment History',
