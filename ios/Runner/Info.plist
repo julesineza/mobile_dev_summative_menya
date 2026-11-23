@@ -27,6 +27,8 @@
 			<array>
 				<!-- Firebase Auth (Google sign-in): "app-" + GOOGLE_APP_ID with ":" replaced by "-". Without it the app crashes on sign-in. -->
 				<string>app-1-879135523749-ios-486bef4d7b38efa072de4c</string>
+				<!-- Native Google sign-in: reversed iOS OAuth client ID. -->
+				<string>com.googleusercontent.apps.879135523749-iuts2qdkr1ief2s8lc61128o5ig2gthg</string>
 			</array>
 		</dict>
 	</array>
