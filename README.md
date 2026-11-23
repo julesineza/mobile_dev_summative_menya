@@ -160,7 +160,7 @@ flutter analyze
 
 ### flutter analyze
 
-![flutter analyze](screenshots/dlutter%20%analyze.png)
+![flutter analyze](screenshots/dlutter%20analyze.png)
 
 ### flutter test
 
