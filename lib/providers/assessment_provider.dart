@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/failure.dart';
 import '../core/grading.dart';
 import '../models/assessment_result.dart';
 import '../models/assessment_session.dart';
@@ -30,23 +31,27 @@ class AssessmentLearner {
 }
 
 class AssessmentProvider extends ChangeNotifier {
-  AssessmentProvider({AssessmentService? service, String? initialClassName})
+  AssessmentProvider({AssessmentService? service})
     : _service = service ?? AssessmentService() {
-    if (initialClassName != null && initialClassName.isNotEmpty) {
-      _selectedClassName = initialClassName;
-      _selectedClassId = _resolveClassId(initialClassName);
-    }
+    _service.onSyncError = _onSyncError;
   }
-
-  static const fallbackSchoolId = 'gs-kigali-central';
-  static const fallbackClassId = 'class-p3-a';
-  static const fallbackTeacherId = 'teacher-1';
 
   final AssessmentService _service;
   UserChoice _selectedAssessment = UserChoice.none;
-  String _selectedClassName = 'P3-A';
-  String _selectedClassId = fallbackClassId;
-  String _selectedSchoolId = fallbackSchoolId;
+
+  // The active class always comes from ClassProvider (the teacher's real
+  // classes). There are no hardcoded fallbacks: with no class, [hasClass] is
+  // false and the screens ask the teacher to create one.
+  String _selectedClassName = '';
+  String? _selectedClassId;
+  String _selectedSchoolId = '';
+
+  /// Message of the last background write Firestore rejected, if any.
+  String? _syncError;
+
+  /// Real grade of the selected class (from the class document). Null when
+  /// only the class name is known; then the grade is guessed from the name.
+  int? _selectedGrade;
   AssessmentTest? _test;
   AssessmentSession? _session;
   List<AssessmentLearner> _learners = const [];
@@ -60,9 +65,19 @@ class AssessmentProvider extends ChangeNotifier {
 
   UserChoice get selectedChoice => _selectedAssessment;
   String get selectedClassName => _selectedClassName;
-  String get selectedClassId => _selectedClassId;
+  String? get selectedClassId => _selectedClassId;
   String get selectedSchoolId => _selectedSchoolId;
+  bool get hasClass => _selectedClassId != null;
+  String? get syncError => _syncError;
+  int get selectedGrade => _selectedGrade ?? parseGrade(_selectedClassName);
   AssessmentTest? get test => _test;
+
+  /// "English" / "Kinyarwanda" / "French" for the current test's language.
+  String get testLanguageLabel => switch (_test?.language ?? Language.english) {
+    Language.english => 'English',
+    Language.kinyarwanda => 'Kinyarwanda',
+    Language.french => 'French',
+  };
   AssessmentSession? get session => _session;
   List<AssessmentLearner> get learners => _learners;
   int get currentLearnerIndex => _currentLearnerIndex;
@@ -78,75 +93,109 @@ class AssessmentProvider extends ChangeNotifier {
   List<AssessmentResult> get completedResults =>
       List.unmodifiable(_completedResults);
 
-  static String _resolveClassId(String className) {
-    final sanitized = className.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
-    return 'class-$sanitized';
-  }
-
-  /// Called by [ChangeNotifierProxyProvider] when [SettingsProvider.activeClass] changes.
-  /// Updates the selected class without firing a full reset.
-  /// NOTE: only a fallback — the class id is derived from the name here, so
-  /// [syncFromClass] should be used whenever the real [SchoolClass] is known.
-  void syncClassFromSettings(String className) {
-    if (className.isEmpty || _selectedClassName == className) return;
-    _selectedClassName = className;
-    _selectedClassId = _resolveClassId(className);
-    notifyListeners();
-  }
-
-  /// Syncs the selected class using the real Firestore class document.
-  /// Always prefer this over [syncClassFromSettings] so queries use the
-  /// actual class id instead of a name-derived one.
-  void syncFromClass({
-    required String id,
-    required String name,
-    String? schoolId,
-  }) {
-    final schoolChanged =
-        schoolId != null &&
-        schoolId.isNotEmpty &&
-        schoolId != _selectedSchoolId;
-    if (_selectedClassId == id &&
-        _selectedClassName == name &&
-        !schoolChanged) {
-      return;
-    }
-    _selectedClassId = id;
-    _selectedClassName = name;
-    if (schoolId != null && schoolId.isNotEmpty) {
-      _selectedSchoolId = schoolId;
-    }
+  /// Called when the teacher has no class (or signed out): forget the class
+  /// and any assessment in progress for it.
+  void clearClass() {
+    if (_selectedClassId == null) return;
+    _selectedClassId = null;
+    _selectedClassName = '';
+    _selectedSchoolId = '';
+    _selectedGrade = null;
+    _test = null;
     _learners = const [];
     _currentLearnerIndex = 0;
     _session = null;
     notifyListeners();
   }
 
-  void setSelectedAssessment(UserChoice assessment) {
-    _selectedAssessment = assessment;
-    _test = null;
-    _session = null;
-    _currentLearnerIndex = 0;
-    _completedResults = [];
+  void clearSyncError() {
+    if (_syncError == null) return;
+    _syncError = null;
     notifyListeners();
   }
 
+  /// Background writes report rejections here (the UI does not wait for them).
+  void _onSyncError(Failure failure) {
+    _syncError = failure.message;
+    notifyListeners();
+  }
+
+  /// Syncs the selected class from the real Firestore class document
+  /// ([ClassProvider.selectedClass]).
+  void syncFromClass({
+    required String id,
+    required String name,
+    String? schoolId,
+    int? grade,
+  }) {
+    final schoolChanged =
+        schoolId != null &&
+        schoolId.isNotEmpty &&
+        schoolId != _selectedSchoolId;
+    final gradeChanged = grade != null && grade != _selectedGrade;
+    if (_selectedClassId == id &&
+        _selectedClassName == name &&
+        !schoolChanged &&
+        !gradeChanged) {
+      return;
+    }
+    _applyClass(id: id, name: name, schoolId: schoolId, grade: grade);
+    notifyListeners();
+  }
+
+  /// Picks the subject. A test already chosen for the same subject (e.g. a
+  /// custom test just saved on the setup screen) is kept; otherwise the
+  /// default test is loaded again by [prepareAssessment].
+  void setSelectedAssessment(UserChoice assessment) {
+    _selectedAssessment = assessment;
+    if (_test != null && _test!.subject != _subjectFor(assessment)) {
+      _test = null;
+    }
+    _session = null;
+    _currentLearnerIndex = 0;
+    _completedResults = [];
+    _resetLearnerState();
+    notifyListeners();
+  }
+
+  /// Loads the default test for the selected subject and class grade, unless
+  /// a matching test is already selected.
+  /// Throws a [Failure] (from the service) when the test cannot be loaded.
   Future<void> prepareAssessment() async {
-    if (_test != null) {
+    final subject = _subjectFor(_selectedAssessment);
+    if (_test != null && _test!.subject == subject) {
       notifyListeners();
       return;
     }
-    final subject = _selectedAssessment == UserChoice.math
-        ? Subject.math
-        : Subject.reading;
-
-    final grade = _parseGrade(_selectedClassName);
+    _requireClass();
     _test = await _service.getTest(
       schoolId: _selectedSchoolId,
       subject: subject,
-      grade: grade,
+      grade: selectedGrade,
     );
     notifyListeners();
+  }
+
+  static Subject _subjectFor(UserChoice choice) =>
+      choice == UserChoice.math ? Subject.math : Subject.reading;
+
+  String _requireClass() {
+    final id = _selectedClassId;
+    if (id == null) {
+      throw const Failure('Create or choose a class first.');
+    }
+    return id;
+  }
+
+  Future<AssessmentTest> _requireTest() async {
+    if (_test == null) await prepareAssessment();
+    final test = _test;
+    if (test == null) {
+      throw const Failure(
+        'Could not load the test. Check your connection and try again.',
+      );
+    }
+    return test;
   }
 
   Future<AssessmentTest> saveCustomTest({
@@ -160,7 +209,6 @@ class AssessmentProvider extends ChangeNotifier {
   }) async {
     final test = await _service.createTest(
       schoolId: schoolId ?? _selectedSchoolId,
-      createdBy: fallbackTeacherId,
       title: title,
       subject: subject,
       grade: grade,
@@ -192,16 +240,31 @@ class AssessmentProvider extends ChangeNotifier {
     required String name,
     required String id,
     String? schoolId,
+    int? grade,
+  }) {
+    _applyClass(id: id, name: name, schoolId: schoolId, grade: grade);
+    notifyListeners();
+  }
+
+  void _applyClass({
+    required String id,
+    required String name,
+    String? schoolId,
+    int? grade,
   }) {
     _selectedClassName = name;
     _selectedClassId = id;
+    _selectedGrade = grade;
     if (schoolId != null && schoolId.isNotEmpty) {
       _selectedSchoolId = schoolId;
+    }
+    // A test written for another grade does not fit the new class.
+    if (_test != null && _test!.grade != selectedGrade) {
+      _test = null;
     }
     _learners = const [];
     _currentLearnerIndex = 0;
     _session = null;
-    notifyListeners();
   }
 
   void setLearners(List<AssessmentLearner> learners) {
@@ -215,7 +278,7 @@ class AssessmentProvider extends ChangeNotifier {
   /// Loads students directly from Firebase Firestore `students` collection.
   Future<List<AssessmentLearner>> loadLearners() async {
     final students = await _service.getStudents(
-      classId: _selectedClassId,
+      classId: _requireClass(),
       schoolId: _selectedSchoolId,
     );
     return students
@@ -235,15 +298,12 @@ class AssessmentProvider extends ChangeNotifier {
   /// Creates a live assessment session document directly in Cloud Firestore.
   Future<void> ensureSession() async {
     if (_session != null) return;
-    if (_test == null) await prepareAssessment();
-
-    final activeTest = _test!;
+    final activeTest = await _requireTest();
     final studentIds = _learners.map((learner) => learner.id).toList();
 
     _session = await _service.createSession(
       schoolId: currentLearner?.schoolId ?? _selectedSchoolId,
-      classId: currentLearner?.classId ?? _selectedClassId,
-      teacherId: fallbackTeacherId,
+      classId: currentLearner?.classId ?? _requireClass(),
       test: activeTest,
       studentIds: studentIds,
     );
@@ -282,8 +342,7 @@ class AssessmentProvider extends ChangeNotifier {
   /// Saves the student reading assessment result directly into Cloud Firestore.
   Future<AssessmentResult> saveReadingResult(ResponseLevel level) async {
     final learner = _requireLearner();
-    if (_test == null) await prepareAssessment();
-    final activeTest = _test!;
+    final activeTest = await _requireTest();
     await ensureSession();
 
     final result = await _service.saveResult(
@@ -291,7 +350,6 @@ class AssessmentProvider extends ChangeNotifier {
       classId: learner.classId,
       sessionId: _session!.id,
       studentId: learner.id,
-      teacherId: fallbackTeacherId,
       subject: Subject.reading,
       language: activeTest.language,
       level: level,
@@ -313,8 +371,7 @@ class AssessmentProvider extends ChangeNotifier {
     int durationSec = 0,
   }) async {
     final learner = _requireLearner();
-    if (_test == null) await prepareAssessment();
-    final activeTest = _test!;
+    final activeTest = await _requireTest();
     await ensureSession();
 
     final correct = _mathAnswers
@@ -338,7 +395,6 @@ class AssessmentProvider extends ChangeNotifier {
       classId: learner.classId,
       sessionId: _session!.id,
       studentId: learner.id,
-      teacherId: fallbackTeacherId,
       subject: Subject.math,
       language: activeTest.language,
       level: level,
@@ -356,15 +412,21 @@ class AssessmentProvider extends ChangeNotifier {
 
   Future<bool> moveToNextLearner() async {
     if (!hasNextLearner) {
-      if (_session != null) {
-        await _service.completeSession(_session!.id);
-      }
+      await finishSession();
       return false;
     }
     _currentLearnerIndex++;
     _resetLearnerState();
     notifyListeners();
     return true;
+  }
+
+  /// Marks the live session as completed (e.g. after the last learner, or
+  /// when the teacher skips the last learner and exits).
+  Future<void> finishSession() async {
+    final session = _session;
+    if (session == null) return;
+    await _service.completeSession(session.id);
   }
 
   void skipCurrentLearner() {
@@ -408,10 +470,11 @@ class AssessmentProvider extends ChangeNotifier {
     return learner;
   }
 
-  int _parseGrade(String className) {
-    if (className.contains('1')) return 1;
-    if (className.contains('2')) return 2;
-    return 3;
+  /// Fallback when only a class name like "P2-A" is known: takes the first
+  /// digit in the name. Defaults to grade 3.
+  static int parseGrade(String className) {
+    final match = RegExp(r'\d+').firstMatch(className);
+    return match == null ? 3 : int.parse(match.group(0)!);
   }
 
   String _initials(String name) {

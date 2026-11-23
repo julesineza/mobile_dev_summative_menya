@@ -9,6 +9,7 @@ import '../../models/enums.dart';
 import '../../models/school_class.dart';
 import '../../providers/assessment_provider.dart';
 import '../../providers/class_provider.dart';
+import 'select_class.dart' show NoClassPrompt;
 
 class TestSetupReadingPage extends StatefulWidget {
   const TestSetupReadingPage({super.key});
@@ -23,32 +24,34 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     text: 'school, books, story, brother, carry, mango, tree, walk, read, together',
   );
 
-  String selectedClass = 'P3-A';
+  /// Name of the class picked in the dropdown ('' until classes load).
+  String selectedClass = '';
   String selectedLanguage = 'English';
 
-  List<SchoolClass> get _classItems {
-    final classes = context.watch<ClassProvider>().classes;
-    if (classes.isNotEmpty) return classes;
-    return const ['P1-A', 'P1-B', 'P2-A', 'P2-B', 'P3-A', 'P3-B']
-        .map(
-          (name) => SchoolClass(
-            id: name,
-            schoolId: '',
-            teacherId: '',
-            name: name,
-            grade: _parseGrade(name),
-          ),
-        )
-        .toList();
+  /// The teacher's real classes only (no hardcoded list).
+  List<SchoolClass> get _classItems => context.watch<ClassProvider>().classes;
+
+  /// The picked class, read outside build (button handlers).
+  SchoolClass? get _pickedClass {
+    for (final c in context.read<ClassProvider>().classes) {
+      if (c.name == selectedClass) return c;
+    }
+    return null;
   }
 
-  List<String> get _classNames {
-    final names = _classItems.map((c) => c.name).toList();
-    if (!names.contains(selectedClass)) {
-      names.insert(0, selectedClass);
-    }
-    return names;
+  /// Makes the picked class the active one, so "Start test now" lists its
+  /// learners and the test is saved for its school and grade.
+  void _selectClass(SchoolClass c) {
+    context.read<AssessmentProvider>().setSelectedClass(
+      name: c.name,
+      id: c.id,
+      schoolId: c.schoolId,
+      grade: c.grade,
+    );
+    context.read<ClassProvider>().select(c.id);
   }
+
+  List<String> get _classNames => _classItems.map((c) => c.name).toList();
 
   String contentType = 'Word list'; // Word list | Passage
   String timerMode = 'Count up'; // Count up | 60 sec | Custom
@@ -80,12 +83,6 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     testNameController.dispose();
     wordsController.dispose();
     super.dispose();
-  }
-
-  int _parseGrade(String className) {
-    if (className.contains('1')) return 1;
-    if (className.contains('2')) return 2;
-    return 3;
   }
 
   Language _parseLanguage(String lang) {
@@ -128,6 +125,16 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
       return;
     }
 
+    final picked = _pickedClass;
+    if (picked == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Create or choose a class first.')),
+      );
+      return;
+    }
+    // Save the test for the picked class's school and grade.
+    _selectClass(picked);
+
     setState(() => _isSaving = true);
 
     try {
@@ -135,7 +142,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
       final createdTest = await provider.saveCustomTest(
         title: title,
         subject: Subject.reading,
-        grade: _parseGrade(selectedClass),
+        grade: picked.grade,
         language: _parseLanguage(selectedLanguage),
         passageText: passage,
       );
@@ -215,6 +222,12 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
     const green = AppColors.button;
     final bg = context.assessmentColors.background;
     final border = context.assessmentColors.border;
+    final classNames = _classNames;
+    // Keep the dropdown value valid: default to the active class, else the
+    // first real class.
+    if (classNames.isNotEmpty && !classNames.contains(selectedClass)) {
+      selectedClass = classNames.first;
+    }
 
     return Scaffold(
       backgroundColor: bg,
@@ -246,7 +259,9 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
               ),
             ),
             Expanded(
-              child: ListView(
+              child: classNames.isEmpty
+                  ? const NoClassPrompt()
+                  : ListView(
                 padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
                   Text(
@@ -296,13 +311,7 @@ class _TestSetupReadingPageState extends State<TestSetupReadingPage> {
                               setState(() => selectedClass = v);
                               for (final c in _classItems) {
                                 if (c.name == v) {
-                                  context
-                                      .read<AssessmentProvider>()
-                                      .setSelectedClass(
-                                        name: c.name,
-                                        id: c.id,
-                                        schoolId: c.schoolId,
-                                      );
+                                  _selectClass(c);
                                   break;
                                 }
                               }

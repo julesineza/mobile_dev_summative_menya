@@ -16,7 +16,7 @@ import 'settings_provider.dart';
 import 'student_provider.dart';
 
 /// Builds the full provider list, wiring both [SharedPreferences] and [PreferencesService]
-/// into [SettingsProvider] and seeding [AssessmentProvider] with the saved active class.
+/// into [SettingsProvider] and keeping [AssessmentProvider] on the selected class.
 ///
 /// Call this from [main.dart] after both preference services have been initialized.
 List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
@@ -25,29 +25,23 @@ List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
   ChangeNotifierProvider<SettingsProvider>(
     create: (context) => SettingsProvider(prefs)..attachService(prefs),
   ),
-  ChangeNotifierProxyProvider2<
-    SettingsProvider,
-    ClassProvider,
-    AssessmentProvider
-  >(
-    create: (_) => AssessmentProvider(initialClassName: prefs.activeClass),
-    update: (_, settings, classes, previous) {
-      // Keep provider in sync when the active class changes (e.g. user picks a new class).
-      final provider =
-          previous ??
-          AssessmentProvider(initialClassName: settings.activeClass);
+  // Assessment (Member 3): the active class always comes from the teacher's
+  // real classes in ClassProvider. No class -> no fallback, the screens ask
+  // the teacher to create one.
+  ChangeNotifierProxyProvider<ClassProvider, AssessmentProvider>(
+    create: (_) => AssessmentProvider(),
+    update: (_, classes, previous) {
+      final provider = previous ?? AssessmentProvider();
       final selected = classes.selectedClass;
       if (selected != null) {
-        // Prefer the real Firestore class document so the class id is the
-        // actual document id, not one derived from the class name.
         provider.syncFromClass(
           id: selected.id,
           name: selected.name,
           schoolId: selected.schoolId,
+          grade: selected.grade,
         );
-      } else if (provider.selectedClassName != settings.activeClass &&
-          settings.activeClass.isNotEmpty) {
-        provider.syncClassFromSettings(settings.activeClass);
+      } else {
+        provider.clearClass();
       }
       return provider;
     },

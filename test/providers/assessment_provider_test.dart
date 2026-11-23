@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile_dev_summative_menya/core/failure.dart';
 import 'package:mobile_dev_summative_menya/core/grading.dart';
 import 'package:mobile_dev_summative_menya/models/assessment_result.dart';
 import 'package:mobile_dev_summative_menya/models/assessment_session.dart';
@@ -37,6 +38,13 @@ void main() {
   setUp(() {
     mockService = MockAssessmentService();
     provider = AssessmentProvider(service: mockService);
+    // The provider has no hardcoded class any more; tests pick one.
+    provider.setSelectedClass(
+      name: 'P3-A',
+      id: 'class-p3-a',
+      schoolId: 'gs-kigali-central',
+      grade: 3,
+    );
   });
 
   tearDown(() {
@@ -44,10 +52,12 @@ void main() {
   });
 
   group('AssessmentProvider Unit Tests', () {
-    test('initial state is correct', () {
+    test('initial state is correct (no hardcoded class)', () {
+      final provider = AssessmentProvider(service: mockService);
       expect(provider.selectedChoice, UserChoice.none);
-      expect(provider.selectedClassName, 'P3-A');
-      expect(provider.selectedClassId, 'class-p3-a');
+      expect(provider.hasClass, isFalse);
+      expect(provider.selectedClassName, '');
+      expect(provider.selectedClassId, isNull);
       expect(provider.test, isNull);
       expect(provider.session, isNull);
       expect(provider.learners, isEmpty);
@@ -80,10 +90,40 @@ void main() {
       expect(provider.selectedClassId, 'class-p2-a');
     });
 
-    test('syncClassFromSettings updates class without full reset', () {
-      provider.syncClassFromSettings('P1-A');
+    test('syncFromClass uses the real class document', () {
+      provider.syncFromClass(
+        id: 'doc-123',
+        name: 'P1-A',
+        schoolId: 'school-1',
+        grade: 1,
+      );
+      expect(provider.hasClass, isTrue);
       expect(provider.selectedClassName, 'P1-A');
-      expect(provider.selectedClassId, 'class-p1-a');
+      expect(provider.selectedClassId, 'doc-123');
+      expect(provider.selectedSchoolId, 'school-1');
+      expect(provider.selectedGrade, 1);
+    });
+
+    test('clearClass forgets the class when the teacher has none', () {
+      provider.syncFromClass(id: 'doc-123', name: 'P1-A', schoolId: 's1');
+      provider.clearClass();
+      expect(provider.hasClass, isFalse);
+      expect(provider.selectedClassId, isNull);
+    });
+
+    test('without a class, loading a test fails with a clear message', () {
+      final provider = AssessmentProvider(service: mockService);
+      provider.setSelectedAssessment(UserChoice.reading);
+      expect(
+        provider.prepareAssessment,
+        throwsA(
+          isA<Failure>().having(
+            (f) => f.message,
+            'message',
+            'Create or choose a class first.',
+          ),
+        ),
+      );
     });
 
     test('setLearners updates learner list and resets index', () {
@@ -259,7 +299,6 @@ void main() {
       when(
         () => mockService.createTest(
           schoolId: any(named: 'schoolId'),
-          createdBy: any(named: 'createdBy'),
           title: any(named: 'title'),
           subject: any(named: 'subject'),
           grade: any(named: 'grade'),
@@ -405,7 +444,6 @@ void main() {
         () => mockService.createSession(
           schoolId: any(named: 'schoolId'),
           classId: any(named: 'classId'),
-          teacherId: any(named: 'teacherId'),
           test: any(named: 'test'),
           studentIds: any(named: 'studentIds'),
         ),
@@ -475,7 +513,6 @@ void main() {
         () => mockService.createSession(
           schoolId: any(named: 'schoolId'),
           classId: any(named: 'classId'),
-          teacherId: any(named: 'teacherId'),
           test: any(named: 'test'),
           studentIds: any(named: 'studentIds'),
         ),
@@ -487,7 +524,6 @@ void main() {
           classId: any(named: 'classId'),
           sessionId: any(named: 'sessionId'),
           studentId: any(named: 'studentId'),
-          teacherId: any(named: 'teacherId'),
           subject: any(named: 'subject'),
           language: any(named: 'language'),
           level: any(named: 'level'),
@@ -573,7 +609,6 @@ void main() {
         () => mockService.createSession(
           schoolId: any(named: 'schoolId'),
           classId: any(named: 'classId'),
-          teacherId: any(named: 'teacherId'),
           test: any(named: 'test'),
           studentIds: any(named: 'studentIds'),
         ),
@@ -585,7 +620,6 @@ void main() {
           classId: any(named: 'classId'),
           sessionId: any(named: 'sessionId'),
           studentId: any(named: 'studentId'),
-          teacherId: any(named: 'teacherId'),
           subject: any(named: 'subject'),
           language: any(named: 'language'),
           level: any(named: 'level'),
@@ -712,6 +746,150 @@ void main() {
       expect(Grading.mathPercent(itemsCorrect: 0, itemsTotal: 4), 0.0);
       expect(Grading.mathPercent(itemsCorrect: 4, itemsTotal: 4), 100.0);
       expect(Grading.mathPercent(itemsCorrect: 0, itemsTotal: 0), 0.0);
+    });
+  });
+
+  group('Assessment bug fixes', () {
+    AssessmentTest makeTest({
+      String id = 'custom-1',
+      Subject subject = Subject.reading,
+      int grade = 3,
+    }) => AssessmentTest(
+      id: id,
+      schoolId: 'school-1',
+      createdBy: 'teacher-1',
+      title: 'Custom',
+      subject: subject,
+      grade: grade,
+      createdAt: DateTime(2026),
+      passageText: 'A custom passage.',
+    );
+
+    test('custom test is kept when the same subject is chosen', () {
+      provider.setCustomTest(makeTest());
+      provider.setSelectedAssessment(UserChoice.reading);
+      expect(provider.test?.id, 'custom-1');
+    });
+
+    test('custom test is dropped when another subject is chosen', () {
+      provider.setCustomTest(makeTest());
+      provider.setSelectedAssessment(UserChoice.math);
+      expect(provider.test, isNull);
+    });
+
+    test('prepareAssessment does not replace a matching custom test', () async {
+      provider.setCustomTest(makeTest());
+      provider.setSelectedAssessment(UserChoice.reading);
+      await provider.prepareAssessment();
+      expect(provider.test?.id, 'custom-1');
+      verifyNever(
+        () => mockService.getTest(
+          schoolId: any(named: 'schoolId'),
+          subject: any(named: 'subject'),
+          grade: any(named: 'grade'),
+        ),
+      );
+    });
+
+    test('the real class grade is used to load the default test', () async {
+      when(
+        () => mockService.getTest(
+          schoolId: any(named: 'schoolId'),
+          subject: any(named: 'subject'),
+          grade: any(named: 'grade'),
+        ),
+      ).thenAnswer((_) async => makeTest(id: 'default', grade: 5));
+
+      provider.setSelectedClass(
+        name: 'Lions',
+        id: 'class-lions',
+        schoolId: 'school-1',
+        grade: 5,
+      );
+      provider.setSelectedAssessment(UserChoice.reading);
+      await provider.prepareAssessment();
+
+      verify(
+        () => mockService.getTest(
+          schoolId: 'school-1',
+          subject: Subject.reading,
+          grade: 5,
+        ),
+      ).called(1);
+    });
+
+    test('changing to a class of another grade drops the old test', () {
+      provider.setCustomTest(makeTest(grade: 3));
+      provider.setSelectedClass(name: 'P1-A', id: 'c1', grade: 1);
+      expect(provider.test, isNull);
+    });
+
+    test('parseGrade reads the number from a class name', () {
+      expect(AssessmentProvider.parseGrade('P1-A'), 1);
+      expect(AssessmentProvider.parseGrade('P5-B'), 5);
+      expect(AssessmentProvider.parseGrade('Lions'), 3);
+    });
+
+    test('saving fails with an error instead of crashing when the test '
+        'cannot be loaded', () async {
+      when(
+        () => mockService.getTest(
+          schoolId: any(named: 'schoolId'),
+          subject: any(named: 'subject'),
+          grade: any(named: 'grade'),
+        ),
+      ).thenThrow(Exception('offline'));
+      provider.setSelectedAssessment(UserChoice.reading);
+      provider.setLearners(const [
+        AssessmentLearner(
+          id: 's1',
+          name: 'Bruno Niyonsaba',
+          initials: 'BN',
+          className: 'Class P3-A',
+          schoolId: 'school-1',
+          classId: 'class-p3-a',
+        ),
+      ]);
+
+      expect(
+        () => provider.saveReadingResult(ResponseLevel.developing),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('finishSession completes the open session', () async {
+      final session = AssessmentSession(
+        id: 'session-9',
+        schoolId: 'school-1',
+        classId: 'class-p3-a',
+        teacherId: 'teacher-1',
+        testId: 'custom-1',
+        subject: Subject.reading,
+        studentIds: const ['s1'],
+        createdAt: DateTime(2026),
+      );
+      when(
+        () => mockService.createSession(
+          schoolId: any(named: 'schoolId'),
+          classId: any(named: 'classId'),
+          test: any(named: 'test'),
+          studentIds: any(named: 'studentIds'),
+        ),
+      ).thenAnswer((_) async => session);
+      when(
+        () => mockService.completeSession(any()),
+      ).thenAnswer((_) async {});
+
+      provider.setCustomTest(makeTest());
+      await provider.ensureSession();
+      await provider.finishSession();
+
+      verify(() => mockService.completeSession('session-9')).called(1);
+    });
+
+    test('finishSession does nothing without a session', () async {
+      await provider.finishSession();
+      verifyNever(() => mockService.completeSession(any()));
     });
   });
 }

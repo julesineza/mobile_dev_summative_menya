@@ -36,6 +36,13 @@ void main() {
   setUp(() {
     mockService = MockAssessmentService();
     provider = AssessmentProvider(service: mockService);
+    // The provider has no hardcoded class any more; tests pick one.
+    provider.setSelectedClass(
+      name: 'P3-A',
+      id: 'class-p3-a',
+      schoolId: 'gs-kigali-central',
+      grade: 3,
+    );
   });
 
   tearDown(() {
@@ -86,7 +93,6 @@ void main() {
         () => mockService.createSession(
           schoolId: any(named: 'schoolId'),
           classId: any(named: 'classId'),
-          teacherId: any(named: 'teacherId'),
           test: any(named: 'test'),
           studentIds: any(named: 'studentIds'),
         ),
@@ -109,7 +115,6 @@ void main() {
           classId: any(named: 'classId'),
           sessionId: any(named: 'sessionId'),
           studentId: any(named: 'studentId'),
-          teacherId: any(named: 'teacherId'),
           subject: any(named: 'subject'),
           language: any(named: 'language'),
           level: any(named: 'level'),
@@ -211,7 +216,6 @@ void main() {
         () => mockService.createSession(
           schoolId: any(named: 'schoolId'),
           classId: any(named: 'classId'),
-          teacherId: any(named: 'teacherId'),
           test: any(named: 'test'),
           studentIds: any(named: 'studentIds'),
         ),
@@ -234,7 +238,6 @@ void main() {
           classId: any(named: 'classId'),
           sessionId: any(named: 'sessionId'),
           studentId: any(named: 'studentId'),
-          teacherId: any(named: 'teacherId'),
           subject: any(named: 'subject'),
           language: any(named: 'language'),
           level: any(named: 'level'),
@@ -340,7 +343,6 @@ void main() {
         () => mockService.createSession(
           schoolId: any(named: 'schoolId'),
           classId: any(named: 'classId'),
-          teacherId: any(named: 'teacherId'),
           test: any(named: 'test'),
           studentIds: any(named: 'studentIds'),
         ),
@@ -363,7 +365,6 @@ void main() {
           classId: any(named: 'classId'),
           sessionId: any(named: 'sessionId'),
           studentId: any(named: 'studentId'),
-          teacherId: any(named: 'teacherId'),
           subject: any(named: 'subject'),
           language: any(named: 'language'),
           level: any(named: 'level'),
@@ -497,7 +498,6 @@ void main() {
       when(
         () => mockService.createTest(
           schoolId: any(named: 'schoolId'),
-          createdBy: any(named: 'createdBy'),
           title: any(named: 'title'),
           subject: any(named: 'subject'),
           grade: any(named: 'grade'),

@@ -57,6 +57,12 @@ void main() {
   group('AssessmentProvider Unit Tests', () {
     test('Flow through multiple learners with reading capture', () async {
       final provider = AssessmentProvider();
+      provider.setSelectedClass(
+        name: 'P3-A',
+        id: 'class-p3-a',
+        schoolId: 'gs-kigali-central',
+        grade: 3,
+      );
       provider.setSelectedAssessment(UserChoice.reading);
       await provider.prepareAssessment();
 

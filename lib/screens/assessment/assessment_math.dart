@@ -38,12 +38,27 @@ class _AssessmentMathState extends State<AssessmentMath> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _initAssessment());
   }
 
-  void _initAssessment() {
+  /// Loads the test and opens the session one after the other (they used to
+  /// run in parallel, loading the test twice), and reports failures.
+  Future<void> _initAssessment() async {
+    if (!mounted) return;
     final provider = context.read<AssessmentProvider>();
-    if (provider.test == null) {
-      provider.prepareAssessment();
+    try {
+      await provider.ensureSession();
+    } catch (error) {
+      debugPrint('[AssessmentMath] session error: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is Failure
+                ? error.message
+                : 'Could not start the session. It will be retried when you save.',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
-    provider.ensureSession();
   }
 
   void _startTimer() {
@@ -163,7 +178,7 @@ class _AssessmentMathState extends State<AssessmentMath> {
     }
   }
 
-  void _skipLearner() {
+  Future<void> _skipLearner() async {
     final provider = context.read<AssessmentProvider>();
     if (provider.hasNextLearner) {
       provider.skipCurrentLearner();
@@ -174,6 +189,10 @@ class _AssessmentMathState extends State<AssessmentMath> {
       });
       _startTimer();
     } else {
+      // Last learner skipped: close the session so it is not left open.
+      _pauseTimer();
+      await provider.finishSession();
+      if (!mounted) return;
       context.go(AppRoutes.assess);
     }
   }

@@ -24,6 +24,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final classProvider = context.read<ClassProvider>();
       setState(() {
         _selectedClassId = classProvider.selectedClass?.id;
@@ -31,11 +32,14 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
     });
   }
 
-  SchoolClass? get selectedClass =>
-      context.watch<ClassProvider>().classes.firstWhere(
-        (c) => c.id == _selectedClassId,
-        orElse: () => context.watch<ClassProvider>().classes.first,
-      );
+  /// The picked class, or null when nothing is picked or the list is empty
+  /// (a teacher with no classes yet must not crash this screen).
+  SchoolClass? _findSelected(List<SchoolClass> classes) {
+    for (final c in classes) {
+      if (c.id == _selectedClassId) return c;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,8 +111,9 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
 
                   // Section header
                   Consumer<ClassProvider>(
-                    builder: (_, classProvider, __) {
+                    builder: (_, classProvider, _) {
                       final classes = classProvider.classes;
+                      final picked = _findSelected(classes);
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -121,9 +126,9 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                               letterSpacing: 0.5,
                             ),
                           ),
-                          if (_selectedClassId != null)
+                          if (picked != null)
                             Text(
-                              'Selected: ${classes.firstWhere((c) => c.id == _selectedClassId, orElse: () => classes.first).name}',
+                              'Selected: ${picked.name}',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -138,8 +143,11 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
 
                   // Class cards
                   Consumer<ClassProvider>(
-                    builder: (_, classProvider, __) {
+                    builder: (_, classProvider, _) {
                       final classes = classProvider.classes;
+                      if (classes.isEmpty) {
+                        return const NoClassPrompt();
+                      }
                       return Column(
                         children: classes.map((schoolClass) {
                           final isSelected = schoolClass.id == _selectedClassId;
@@ -268,13 +276,10 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                 width: double.infinity,
                 height: 54,
                 child: Consumer<ClassProvider>(
-                  builder: (_, classProvider, __) {
-                    final selectedClass = classProvider.classes.firstWhere(
-                      (c) => c.id == _selectedClassId,
-                      orElse: () => classProvider.classes.first,
-                    );
+                  builder: (_, classProvider, _) {
+                    final selectedClass = _findSelected(classProvider.classes);
                     return ElevatedButton(
-                      onPressed: _selectedClassId == null
+                      onPressed: selectedClass == null
                           ? null
                           : () {
                               final formattedName = selectedClass.name;
@@ -285,6 +290,7 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                                     name: formattedName,
                                     id: selectedClass.id,
                                     schoolId: selectedClass.schoolId,
+                                    grade: selectedClass.grade,
                                   );
                               // Update ClassProvider selection.
                               context.read<ClassProvider>().select(
@@ -314,14 +320,14 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: green,
-                        disabledBackgroundColor: green.withOpacity(0.4),
+                        disabledBackgroundColor: green.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                         elevation: 0,
                       ),
                       child: Text(
-                        _selectedClassId == null
+                        selectedClass == null
                             ? 'Select a class'
                             : 'Set ${selectedClass.name} as active class',
                         style: TextStyle(
@@ -333,6 +339,61 @@ class _SelectClassesPageState extends State<SelectClassesPage> {
                     );
                   },
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown on assessment screens when the teacher has no class yet. There is no
+/// fallback class: the teacher is sent to create a real one.
+class NoClassPrompt extends StatelessWidget {
+  const NoClassPrompt({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.class_outlined,
+              size: 64,
+              color: context.assessmentColors.secondaryText,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No class yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: context.assessmentColors.text,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Create a class and add learners before running a quick check.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: context.assessmentColors.secondaryText,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.classes),
+              icon: Icon(Icons.add, color: Colors.white),
+              label: Text(
+                'Create a class',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.button,
               ),
             ),
           ],

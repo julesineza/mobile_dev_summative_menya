@@ -15,6 +15,7 @@ class StartAssessment extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final provider = context.watch<AssessmentProvider>();
 
     final isDark = theme.brightness == Brightness.dark;
     SystemChrome.setSystemUIOverlayStyle(
@@ -46,6 +47,47 @@ class StartAssessment extends StatelessWidget {
 
               SizedBox(height: 27),
 
+              // A save that Firestore rejected after we moved on (writes
+              // run in the background so the flow never hangs offline).
+              if (provider.syncError != null) ...[
+                Container(
+                  padding: EdgeInsets.fromLTRB(14, 6, 4, 6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.cloud_off_outlined,
+                        color: colorScheme.onErrorContainer,
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'A result could not be saved: ${provider.syncError}',
+                          style: TextStyle(
+                            color: colorScheme.onErrorContainer,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: provider.clearSyncError,
+                        icon: Icon(
+                          Icons.close,
+                          color: colorScheme.onErrorContainer,
+                          size: 18,
+                        ),
+                        tooltip: 'Dismiss',
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+              ],
+
               // Description
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -58,21 +100,27 @@ class StartAssessment extends StatelessWidget {
                           fontSize: 15,
                           height: 1.3,
                         ),
-                        children: [
-                          TextSpan(
-                            text: 'Select a subject to begin a quick check. Class ',
-                          ),
-                          TextSpan(
-                            text: context
-                                .watch<AssessmentProvider>()
-                                .selectedClassName,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(text: ' is active.'),
-                        ],
+                        children: provider.hasClass
+                            ? [
+                                TextSpan(
+                                  text:
+                                      'Select a subject to begin a quick check. Class ',
+                                ),
+                                TextSpan(
+                                  text: provider.selectedClassName,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextSpan(text: ' is active.'),
+                              ]
+                            : [
+                                TextSpan(
+                                  text:
+                                      'No class selected. Create or choose a class to start a quick check.',
+                                ),
+                              ],
                       ),
                     ),
                   ),
