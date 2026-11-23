@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 
-import '../core/failure.dart';
 import '../core/firebase_guard.dart';
 import '../core/firestore_paths.dart';
 import '../models/assessment_result.dart';
@@ -72,15 +71,19 @@ class StudentService {
   Future<void> updateStudent(Student s) =>
       guardFirebase(() => _students.doc(s.id).update(s.toMap()));
 
-  /// CREATE: adds a student to the Firestore `students` collection.
-  Future<void> addStudent(Student student) => guardFirebase(() async {
-    if (Firebase.apps.isEmpty) {
-      throw const Failure('Firebase is not initialized.');
-    }
-    await _students.add(student.toMap());
-  });
+  /// CREATE: adds a student to the Firestore 'students' collection.
+  Future<void> addStudent(Student student) async {
+    _students
+        .doc()
+        .set(student.toMap())
+        .catchError((Object e) => debugPrint('Add student sync failed: $e'));
+  }
 
-  /// DELETE
-  Future<void> deleteStudent(String studentId) =>
-      guardFirebase(() => _students.doc(studentId).delete());
+  /// DELETE: same , applied locally now and synced later.
+  Future<void> deleteStudent(String studentId) async {
+    _students
+        .doc(studentId)
+        .delete()
+        .catchError((Object e) => debugPrint('Delete student sync failed: $e'));
+  }
 }
