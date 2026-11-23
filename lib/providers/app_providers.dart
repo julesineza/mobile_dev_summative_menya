@@ -3,14 +3,17 @@ import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
+import '../services/club_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/preferences_service.dart';
 import '../services/school_class_service.dart';
 import '../services/student_service.dart';
+import '../services/support_plan_service.dart';
 import 'assessment_provider.dart';
 import 'auth_provider.dart';
 import 'class_provider.dart';
 import 'dashboard_provider.dart';
+import 'review_provider.dart';
 import 'school_provider.dart';
 import 'settings_provider.dart';
 import 'student_provider.dart';
@@ -115,4 +118,8 @@ List<SingleChildWidget> get studentProviders => [
 List<SingleChildWidget> get assessmentProviders => [];
 
 /// Post-assessment review providers — owned by Member 4.
-List<SingleChildWidget> get reviewProviders => [];
+List<SingleChildWidget> get reviewProviders => [
+  ChangeNotifierProvider<ReviewProvider>(
+    create: (_) => ReviewProvider(SupportPlanService(), ClubService()),
+  ),
+];

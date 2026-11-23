@@ -24,8 +24,13 @@ import 'screens/settings/students_screen.dart';
 import 'screens/students/student_roster_screen.dart';
 import 'screens/students/student_profile_screen.dart';
 import 'screens/progress/class_progress_screen.dart';
+import 'screens/review/learner_history_screen.dart';
+import 'screens/review/plan_saved_screen.dart';
+import 'screens/review/result_saved_screen.dart';
+import 'screens/review/review_result_screen.dart';
+import 'screens/review/schedule_recheck_screen.dart';
+import 'screens/review/support_plan_screen.dart';
 import 'widgets/app_shell.dart';
-import 'widgets/placeholder_screen.dart';
 
 /// All route paths in one place (lib/app_routes.dart). Add yours via PR.
 class AppRoutes {
@@ -55,6 +60,18 @@ class AppRoutes {
   static const progress = '/progress';
   static const review = '/review/:resultId';
   static const supportPlan = '/support-plan/:studentId';
+  static const history = '/history/:studentId'; // member 4
+
+  // path builders for the review, support plan and history flow.
+  static String reviewPath(String resultId) => '/review/$resultId';
+  static String reviewSavedPath(String resultId) => '/review/$resultId/saved';
+  static String supportPlanPath(String studentId, {String? resultId}) =>
+      '/support-plan/$studentId${resultId == null ? '' : '?resultId=$resultId'}';
+  static String recheckPath(String studentId) =>
+      '/support-plan/$studentId/recheck';
+  static String planSavedPath(String studentId) =>
+      '/support-plan/$studentId/saved';
+  static String historyPath(String studentId) => '/history/$studentId';
 }
 
 // ---------------------------------------------------------------------------
@@ -125,15 +142,36 @@ List<RouteBase> get progressRoutes => [
 List<RouteBase> get reviewRoutes => [
   GoRoute(
     path: AppRoutes.review,
-    builder: (_, state) => PlaceholderScreen(
-      'Review ${state.pathParameters['resultId']} (Member 4)',
-    ),
+    builder: (_, state) =>
+        ReviewResultScreen(resultId: state.pathParameters['resultId']!),
+    routes: [
+      GoRoute(path: 'saved', builder: (_, _) => const ResultSavedScreen()),
+    ],
   ),
   GoRoute(
     path: AppRoutes.supportPlan,
-    builder: (_, state) => PlaceholderScreen(
-      'Support plan ${state.pathParameters['studentId']} (Member 4)',
+    builder: (_, state) => SupportPlanScreen(
+      studentId: state.pathParameters['studentId']!,
+      resultId: state.uri.queryParameters['resultId'],
     ),
+    routes: [
+      GoRoute(
+        path: 'recheck',
+        builder: (_, state) => ScheduleRecheckScreen(
+          studentId: state.pathParameters['studentId']!,
+        ),
+      ),
+      GoRoute(
+        path: 'saved',
+        builder: (_, state) =>
+            PlanSavedScreen(studentId: state.pathParameters['studentId']!),
+      ),
+    ],
+  ),
+  GoRoute(
+    path: AppRoutes.history,
+    builder: (_, state) =>
+        LearnerHistoryScreen(studentId: state.pathParameters['studentId']!),
   ),
 ];
 
