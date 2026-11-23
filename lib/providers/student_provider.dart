@@ -1,10 +1,13 @@
+// OWNER: Member 2.
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/failure.dart';
 import '../core/view_state.dart';
 import '../models/enums.dart';
 import '../models/student.dart';
+import '../models/assessment_result.dart';
 import '../services/student_service.dart';
 
 enum RosterFilter { all, needsSupport, watch }
@@ -13,6 +16,7 @@ class StudentProvider extends ChangeNotifier {
   StudentProvider(this._service);
   final StudentService _service;
   StreamSubscription<List<Student>>? _sub;
+  StreamSubscription<List<AssessmentResult>>? _resultsSub;
 
   ViewState state = ViewState.idle;
   String? error;
@@ -20,12 +24,21 @@ class StudentProvider extends ChangeNotifier {
   String className = '';
 
   List<Student> _students = [];
+  List<AssessmentResult> _results = [];
+
   String _query = '';
   RosterFilter filter = RosterFilter.all;
 
   List<Student> get all => _students;
+  List<Student> get students => _students;
   int get total => _students.length;
+  bool get isLoading => state == ViewState.loading;
+  String? get errorMessage => error;
   int countOf(SupportStatus s) => _students.where((x) => x.status == s).length;
+
+  List<AssessmentResult> get results => _results;
+  List<AssessmentResult> resultsFor(String studentId) =>
+      _results.where((r) => r.studentId == studentId).toList();
 
   List<Student> get needsAttention =>
       _students.where((s) => s.status == SupportStatus.needsSupport).toList();
@@ -49,15 +62,28 @@ class StudentProvider extends ChangeNotifier {
     return null;
   }
 
-  void listenToClass(String classId, {String className = ''}) {
+  void listenToClass(
+    String classId, {
+    String? schoolId,
+    String className = '',
+  }) {
     this.className = className;
     if (this.classId == classId && _sub != null) return;
     this.classId = classId;
     _sub?.cancel();
+    _resultsSub?.cancel();
+    _students = [];
+    _results = [];
     state = ViewState.loading;
-    notifyListeners();
+    // no notifyListeners() the proxy provider rebuilds the screens itself
+    _resultsSub = _service
+        .streamClassResults(classId, schoolId: schoolId)
+        .listen((list) {
+          _results = list;
+          notifyListeners();
+        }, onError: (Object _) {}); // roster still works if results fail
     _sub = _service
-        .streamStudents(classId)
+        .streamStudents(classId, schoolId: schoolId)
         .listen(
           (list) {
             _students = list;
@@ -82,9 +108,66 @@ class StudentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Starts (or restarts) listening to the students of [classId].
+  /// Pass null to stop listening.
+  void watchClass(String? classId) {
+    if (classId == null) {
+      _sub?.cancel();
+      _resultsSub?.cancel();
+      _sub = null;
+      _resultsSub = null;
+      this.classId = null;
+      _students = [];
+      _results = [];
+      state = ViewState.idle;
+      error = null;
+      notifyListeners();
+      return;
+    }
+    listenToClass(classId);
+  }
+
+  Future<bool> _run(Future<void> Function() action) async {
+    error = null;
+    try {
+      await action();
+      return true;
+    } on Failure catch (e) {
+      error = e.message;
+    } catch (_) {
+      error = 'Something went wrong. Please try again.';
+    }
+    notifyListeners();
+    return false;
+  }
+
+  /// Adds a student to the Firestore `students` collection.
+  /// [id] is left empty so Firestore generates the document id.
+  Future<bool> addStudent({
+    required String schoolId,
+    required String classId,
+    required String name,
+    required int rollNo,
+  }) => _run(
+    () => _service.addStudent(
+      Student(
+        id: '',
+        schoolId: schoolId,
+        classId: classId,
+        name: name,
+        rollNo: rollNo,
+        status: SupportStatus.onTrack,
+      ),
+    ),
+  );
+
+  Future<bool> deleteStudent(String studentId) =>
+      _run(() => _service.deleteStudent(studentId));
+
   @override
   void dispose() {
     _sub?.cancel();
+    _resultsSub?.cancel();
     super.dispose();
   }
 }

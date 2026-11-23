@@ -31,7 +31,7 @@ class AssessmentLearner {
 
 class AssessmentProvider extends ChangeNotifier {
   AssessmentProvider({AssessmentService? service, String? initialClassName})
-      : _service = service ?? AssessmentService() {
+    : _service = service ?? AssessmentService() {
     if (initialClassName != null && initialClassName.isNotEmpty) {
       _selectedClassName = initialClassName;
       _selectedClassId = _resolveClassId(initialClassName);
@@ -46,6 +46,7 @@ class AssessmentProvider extends ChangeNotifier {
   UserChoice _selectedAssessment = UserChoice.none;
   String _selectedClassName = 'P3-A';
   String _selectedClassId = fallbackClassId;
+  String _selectedSchoolId = fallbackSchoolId;
   AssessmentTest? _test;
   AssessmentSession? _session;
   List<AssessmentLearner> _learners = const [];
@@ -60,6 +61,7 @@ class AssessmentProvider extends ChangeNotifier {
   UserChoice get selectedChoice => _selectedAssessment;
   String get selectedClassName => _selectedClassName;
   String get selectedClassId => _selectedClassId;
+  String get selectedSchoolId => _selectedSchoolId;
   AssessmentTest? get test => _test;
   AssessmentSession? get session => _session;
   List<AssessmentLearner> get learners => _learners;
@@ -83,10 +85,40 @@ class AssessmentProvider extends ChangeNotifier {
 
   /// Called by [ChangeNotifierProxyProvider] when [SettingsProvider.activeClass] changes.
   /// Updates the selected class without firing a full reset.
+  /// NOTE: only a fallback — the class id is derived from the name here, so
+  /// [syncFromClass] should be used whenever the real [SchoolClass] is known.
   void syncClassFromSettings(String className) {
     if (className.isEmpty || _selectedClassName == className) return;
     _selectedClassName = className;
     _selectedClassId = _resolveClassId(className);
+    notifyListeners();
+  }
+
+  /// Syncs the selected class using the real Firestore class document.
+  /// Always prefer this over [syncClassFromSettings] so queries use the
+  /// actual class id instead of a name-derived one.
+  void syncFromClass({
+    required String id,
+    required String name,
+    String? schoolId,
+  }) {
+    final schoolChanged =
+        schoolId != null &&
+        schoolId.isNotEmpty &&
+        schoolId != _selectedSchoolId;
+    if (_selectedClassId == id &&
+        _selectedClassName == name &&
+        !schoolChanged) {
+      return;
+    }
+    _selectedClassId = id;
+    _selectedClassName = name;
+    if (schoolId != null && schoolId.isNotEmpty) {
+      _selectedSchoolId = schoolId;
+    }
+    _learners = const [];
+    _currentLearnerIndex = 0;
+    _session = null;
     notifyListeners();
   }
 
@@ -110,7 +142,7 @@ class AssessmentProvider extends ChangeNotifier {
 
     final grade = _parseGrade(_selectedClassName);
     _test = await _service.getTest(
-      schoolId: fallbackSchoolId,
+      schoolId: _selectedSchoolId,
       subject: subject,
       grade: grade,
     );
@@ -124,10 +156,10 @@ class AssessmentProvider extends ChangeNotifier {
     Language language = Language.english,
     String? passageText,
     List<TestQuestion> questions = const [],
-    String schoolId = fallbackSchoolId,
+    String? schoolId,
   }) async {
     final test = await _service.createTest(
-      schoolId: schoolId,
+      schoolId: schoolId ?? _selectedSchoolId,
       createdBy: fallbackTeacherId,
       title: title,
       subject: subject,
@@ -156,9 +188,16 @@ class AssessmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedClass({required String name, required String id}) {
+  void setSelectedClass({
+    required String name,
+    required String id,
+    String? schoolId,
+  }) {
     _selectedClassName = name;
     _selectedClassId = id;
+    if (schoolId != null && schoolId.isNotEmpty) {
+      _selectedSchoolId = schoolId;
+    }
     _learners = const [];
     _currentLearnerIndex = 0;
     _session = null;
@@ -177,7 +216,7 @@ class AssessmentProvider extends ChangeNotifier {
   Future<List<AssessmentLearner>> loadLearners() async {
     final students = await _service.getStudents(
       classId: _selectedClassId,
-      schoolId: fallbackSchoolId,
+      schoolId: _selectedSchoolId,
     );
     return students
         .map(
@@ -202,7 +241,7 @@ class AssessmentProvider extends ChangeNotifier {
     final studentIds = _learners.map((learner) => learner.id).toList();
 
     _session = await _service.createSession(
-      schoolId: currentLearner?.schoolId ?? fallbackSchoolId,
+      schoolId: currentLearner?.schoolId ?? _selectedSchoolId,
       classId: currentLearner?.classId ?? _selectedClassId,
       teacherId: fallbackTeacherId,
       test: activeTest,

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
 import '../../core/view_state.dart';
 import '../../models/assessment_result.dart';
@@ -11,6 +10,7 @@ import '../../models/enums.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/student_widgets.dart';
 import '../../core/constants/student_colors.dart';
+import '../../core/theme/assessment_colors.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key, required this.studentId});
@@ -21,36 +21,36 @@ class StudentProfileScreen extends StatefulWidget {
 }
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
-  late final Stream<List<AssessmentResult>> _results;
-
-  @override
-  void initState() {
-    super.initState();
-    _results = Stream.value(const <AssessmentResult>[]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
+    final c = context.assessmentColors;
     final s = p.byId(widget.studentId);
 
     if (s == null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(backgroundColor: AppColors.background, elevation: 0),
+        backgroundColor: c.background,
+        appBar: AppBar(
+          backgroundColor: c.background,
+          foregroundColor: c.text,
+          elevation: 0,
+        ),
         body: Center(
           child: p.state == ViewState.loading
               ? const CircularProgressIndicator()
-              : const Text(
+              : Text(
                   'Student not found.',
-                  style: TextStyle(color: AppColors.secondaryText),
+                  style: TextStyle(color: c.secondaryText),
                 ),
         ),
       );
     }
 
+    final results = p.resultsFor(s.id)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // newest first
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -75,96 +75,82 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ),
       ),
       body: SafeArea(
-        child: StreamBuilder<List<AssessmentResult>>(
-          stream: _results,
-          builder: (context, snap) {
-            final results = [...?snap.data]
-              ..sort(
-                (a, b) => b.createdAt.compareTo(a.createdAt),
-              ); // newest first
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(8, 8, 20, 24),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(8, 8, 20, 24),
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.text,
-                      ),
-                    ),
-                    const Text(
-                      'Student Profile',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.text,
-                      ),
-                    ),
-                  ],
+                IconButton(
+                  onPressed: () => context.pop(),
+                  icon: Icon(Icons.chevron_left, color: c.text),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Column(
-                          children: [
-                            StudentAvatar(name: s.name, radius: 36),
-                            const SizedBox(height: 12),
-                            Text(
-                              s.name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.text,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Class ${p.className} • Roll No. ${s.rollNo}',
-                              style: const TextStyle(
-                                color: AppColors.secondaryText,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            StatusBadge(status: s.status),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _SubjectCard(subject: Subject.reading, results: results),
-                      const SizedBox(height: 12),
-                      _SubjectCard(subject: Subject.math, results: results),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Assessment History',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (results.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Text(
-                            'No checks yet.',
-                            style: TextStyle(color: AppColors.secondaryText),
-                          ),
-                        )
-                      else
-                        for (final r in results) _HistoryRow(result: r),
-                    ],
+                Text(
+                  'Student Profile',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: c.text,
                   ),
                 ),
               ],
-            );
-          },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Column(
+                      children: [
+                        StudentAvatar(name: s.name, radius: 36),
+                        const SizedBox(height: 12),
+                        Text(
+                          s.name,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: c.text,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Class ${p.className} • Roll No. ${s.rollNo}',
+                          style: TextStyle(color: c.secondaryText),
+                        ),
+                        const SizedBox(height: 10),
+                        StatusBadge(status: s.status),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _SubjectCard(subject: Subject.reading, results: results),
+                  const SizedBox(height: 12),
+                  _SubjectCard(subject: Subject.math, results: results),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Assessment History',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: c.text,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (results.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'No checks yet.',
+                        style: TextStyle(color: c.secondaryText),
+                      ),
+                    )
+                  else
+                    for (final r in results) _HistoryRow(result: r),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -178,6 +164,7 @@ class _SubjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final mine = results.where((r) => r.subject == subject).toList();
     final latest = mine.isEmpty ? null : mine.first;
     final prev = mine.length > 1 ? mine[1] : null;
@@ -203,15 +190,13 @@ class _SubjectCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isReading
-                  ? AppColors.primarySoft
-                  : StudentColors.watchFill,
+              color: isReading ? c.primarySoft : c.mathSoft,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               isReading ? Icons.menu_book_outlined : Icons.calculate_outlined,
               size: 20,
-              color: isReading ? AppColors.button : StudentColors.watch,
+              color: isReading ? context.studentGreen : c.mathText,
             ),
           ),
           const SizedBox(width: 12),
@@ -221,18 +206,12 @@ class _SubjectCard extends StatelessWidget {
               children: [
                 Text(
                   isReading ? 'Reading Fluency' : 'Mathematics',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w700, color: c.text),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   detail,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.secondaryText,
-                  ),
+                  style: TextStyle(fontSize: 12, color: c.secondaryText),
                 ),
               ],
             ),
@@ -241,7 +220,7 @@ class _SubjectCard extends StatelessWidget {
             trailing,
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: latest?.level.color ?? AppColors.secondaryText,
+              color: latest?.level.colorOf(context) ?? c.secondaryText,
             ),
           ),
         ],
@@ -255,27 +234,32 @@ class _HistoryRow extends StatelessWidget {
   final AssessmentResult result;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    decoration: const BoxDecoration(
-      border: Border(bottom: BorderSide(color: AppColors.divider)),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            result.subject == Subject.reading ? 'Reading check' : 'Math check',
-            style: const TextStyle(color: AppColors.text),
+  Widget build(BuildContext context) {
+    final c = context.assessmentColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: c.divider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              result.subject == Subject.reading
+                  ? 'Reading check'
+                  : 'Math check',
+              style: TextStyle(color: c.text),
+            ),
           ),
-        ),
-        Text(
-          '${result.level.label} (${DateFormat('MMM d').format(result.createdAt)})',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: result.level.color,
+          Text(
+            '${result.level.label} (${DateFormat('MMM d').format(result.createdAt)})',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: result.level.colorOf(context),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

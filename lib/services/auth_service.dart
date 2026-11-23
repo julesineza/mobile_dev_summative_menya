@@ -122,5 +122,7 @@ class AuthService {
     return guardFirebase(() => _users.doc(uid).update(changes));
   }
 
+  /// Signs out of Firebase. Google sign-in now goes through Firebase itself,
+  /// so there is no separate Google session to clear.
   Future<void> signOut() => guardFirebase(() => _auth.signOut());
 }

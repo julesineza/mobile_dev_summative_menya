@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants/colors.dart';
 import '../../core/view_state.dart';
 import '../../models/assessment_result.dart';
 import '../../models/enums.dart';
@@ -10,6 +9,8 @@ import '../../models/student.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/student_widgets.dart';
 import '../../core/constants/student_colors.dart';
+import '../../core/theme/app_palette.dart';
+import '../../core/theme/assessment_colors.dart';
 
 class ClassProgressScreen extends StatefulWidget {
   const ClassProgressScreen({super.key});
@@ -19,149 +20,137 @@ class ClassProgressScreen extends StatefulWidget {
 }
 
 class _ClassProgressScreenState extends State<ClassProgressScreen> {
-  late final Stream<List<AssessmentResult>> _results;
-
-  @override
-  void initState() {
-    super.initState();
-    _results = Stream.value(const <AssessmentResult>[]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
+    final c = context.assessmentColors;
 
     if (p.state == ViewState.loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: c.background,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     final onTrack = p.countOf(SupportStatus.onTrack);
     final watch = p.countOf(SupportStatus.watch);
     final support = p.countOf(SupportStatus.needsSupport);
+    final results = p.results;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
-        child: StreamBuilder<List<AssessmentResult>>(
-          stream: _results,
-          builder: (context, snap) {
-            final results = snap.data ?? const <AssessmentResult>[];
-            return ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text(
-                  'Class Progress',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                MenyaCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text(
+              'Class Progress',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: c.text,
+              ),
+            ),
+            const SizedBox(height: 16),
+            MenyaCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Class overview',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.text,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${p.total} students · ${p.className}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.button,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Class overview',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: c.text,
+                        ),
                       ),
-                      const SizedBox(height: 14),
-                      _StackedBar(
-                        counts: {
-                          SupportStatus.onTrack: onTrack,
-                          SupportStatus.watch: watch,
-                          SupportStatus.needsSupport: support,
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 6,
-                        children: [
-                          _Legend(
-                            color: SupportStatus.onTrack.color,
-                            text: 'On track ($onTrack)',
-                          ),
-                          _Legend(
-                            color: SupportStatus.watch.color,
-                            text: 'Watch ($watch)',
-                          ),
-                          _Legend(
-                            color: SupportStatus.needsSupport.color,
-                            text: 'Support ($support)',
-                          ),
-                        ],
+                      const Spacer(),
+                      Text(
+                        '${p.total} students · ${p.className}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.studentGreen,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Subject Progress',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
+                  const SizedBox(height: 14),
+                  _StackedBar(
+                    counts: {
+                      SupportStatus.onTrack: onTrack,
+                      SupportStatus.watch: watch,
+                      SupportStatus.needsSupport: support,
+                    },
                   ),
-                ),
-                const SizedBox(height: 12),
-                _SubjectBar(
-                  label: 'Reading Fluency',
-                  percent: _competentPercent(results, Subject.reading),
-                ),
-                const SizedBox(height: 14),
-                _SubjectBar(
-                  label: 'Mathematics',
-                  percent: _competentPercent(results, Subject.math),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Students Needing Attention',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (p.needsAttention.isEmpty)
-                  const Text(
-                    'No learners flagged right now.',
-                    style: TextStyle(color: AppColors.secondaryText),
-                  )
-                else
-                  for (final s in p.needsAttention)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _AttentionRow(
-                        student: s,
-                        reason: _reason(results, s.id),
-                        onTap: () => context.push('/students/${s.id}'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 6,
+                    children: [
+                      _Legend(
+                        color: SupportStatus.onTrack.colorOf(context),
+                        text: 'On track ($onTrack)',
                       ),
-                    ),
-              ],
-            );
-          },
+                      _Legend(
+                        color: SupportStatus.watch.colorOf(context),
+                        text: 'Watch ($watch)',
+                      ),
+                      _Legend(
+                        color: SupportStatus.needsSupport.colorOf(context),
+                        text: 'Support ($support)',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Subject Progress',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: c.text,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _SubjectBar(
+              label: 'Reading Fluency',
+              percent: _competentPercent(results, Subject.reading),
+            ),
+            const SizedBox(height: 14),
+            _SubjectBar(
+              label: 'Mathematics',
+              percent: _competentPercent(results, Subject.math),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Students Needing Attention',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: c.text,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (p.needsAttention.isEmpty)
+              Text(
+                'No learners flagged right now.',
+                style: TextStyle(color: c.secondaryText),
+              )
+            else
+              for (final s in p.needsAttention)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _AttentionRow(
+                    student: s,
+                    reason: _reason(results, s.id),
+                    onTap: () => context.push('/students/${s.id}'),
+                  ),
+                ),
+          ],
         ),
       ),
     );
@@ -210,9 +199,9 @@ class _StackedBar extends StatelessWidget {
       child: SizedBox(
         height: 14,
         child: parts.isEmpty
-            ? const ColoredBox(
-                color: AppColors.divider,
-                child: SizedBox.expand(),
+            ? ColoredBox(
+                color: context.assessmentColors.divider,
+                child: const SizedBox.expand(),
               )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,7 +209,7 @@ class _StackedBar extends StatelessWidget {
                   for (final e in parts)
                     Expanded(
                       flex: e.value,
-                      child: ColoredBox(color: e.key.color),
+                      child: ColoredBox(color: e.key.colorOf(context)),
                     ),
                 ],
               ),
@@ -246,7 +235,10 @@ class _Legend extends StatelessWidget {
       const SizedBox(width: 6),
       Text(
         text,
-        style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+        style: TextStyle(
+          fontSize: 12,
+          color: context.assessmentColors.secondaryText,
+        ),
       ),
     ],
   );
@@ -259,14 +251,15 @@ class _SubjectBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final pct = percent;
     final color = pct == null
-        ? AppColors.secondaryText
+        ? c.secondaryText
         : pct >= 70
-        ? AppColors.button
+        ? context.studentGreen
         : pct >= 50
-        ? StudentColors.watch
-        : AppColors.warningStroke;
+        ? context.palette.watchText
+        : c.warningStroke;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -274,10 +267,7 @@ class _SubjectBar extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.text,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600, color: c.text),
             ),
             const Spacer(),
             Text(
@@ -297,7 +287,7 @@ class _SubjectBar extends StatelessWidget {
             value: (pct ?? 0) / 100,
             minHeight: 8,
             color: color,
-            backgroundColor: AppColors.divider,
+            backgroundColor: c.divider,
           ),
         ),
       ],
@@ -317,12 +307,13 @@ class _AttentionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final radius = BorderRadius.circular(14);
     return Material(
-      color: AppColors.warningFill,
+      color: c.warningFill,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: BorderSide(color: AppColors.warningStroke.withValues(alpha: 0.5)),
+        side: BorderSide(color: c.warningStroke.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         borderRadius: radius,
@@ -339,23 +330,20 @@ class _AttentionRow extends StatelessWidget {
                   children: [
                     Text(
                       student.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.text,
+                        color: c.text,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       reason,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryText,
-                      ),
+                      style: TextStyle(fontSize: 12, color: c.secondaryText),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.error_outline, color: AppColors.warningStroke),
+              Icon(Icons.error_outline, color: c.warningStroke),
             ],
           ),
         ),

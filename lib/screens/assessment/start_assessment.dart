@@ -6,6 +6,7 @@ import 'package:mobile_dev_summative_menya/providers/assessment_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
 
 class StartAssessment extends StatelessWidget {
   const StartAssessment({super.key});
@@ -15,25 +16,26 @@ class StartAssessment extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final isDark = theme.brightness == Brightness.dark;
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: colorScheme.surface,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       ),
     );
 
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 27),
+              SizedBox(height: 27),
 
               // Page title
-              const Text(
+              Text(
                 'New Assessment',
                 style: TextStyle(
                   fontSize: 20,
@@ -42,7 +44,7 @@ class StartAssessment extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 27),
+              SizedBox(height: 27),
 
               // Description
               Row(
@@ -57,7 +59,7 @@ class StartAssessment extends StatelessWidget {
                           height: 1.3,
                         ),
                         children: [
-                          const TextSpan(
+                          TextSpan(
                             text: 'Select a subject to begin a quick check. Class ',
                           ),
                           TextSpan(
@@ -69,7 +71,7 @@ class StartAssessment extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const TextSpan(text: ' is active.'),
+                          TextSpan(text: ' is active.'),
                         ],
                       ),
                     ),
@@ -80,9 +82,9 @@ class StartAssessment extends StatelessWidget {
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.button,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 8),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Change',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
@@ -90,7 +92,7 @@ class StartAssessment extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 23),
+              SizedBox(height: 23),
 
               // Reading card
               SubjectCard(
@@ -98,7 +100,7 @@ class StartAssessment extends StatelessWidget {
                 description: 'Fluency, recognition, and comprehension',
                 icon: Icons.menu_book_outlined,
                 color: colorScheme.primary,
-                iconBackground: const Color(0xFFEAF4EC),
+                iconBackground: context.assessmentColors.primarySoft,
                 onTap: () {
                   context.read<AssessmentProvider>().setSelectedAssessment(
                     UserChoice.reading,
@@ -107,15 +109,15 @@ class StartAssessment extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
               // Mathematics card
               SubjectCard(
                 title: 'Imibare (Mathematics)',
                 description: 'Arithmetic, division, and basic logic',
                 icon: Icons.calculate_outlined,
-                color: const Color(0xFFFF6500),
-                iconBackground: const Color(0xFFFFF1E7),
+                color: context.assessmentColors.mathText,
+                iconBackground: context.assessmentColors.mathSoft,
                 onTap: () {
                   context.read<AssessmentProvider>().setSelectedAssessment(
                     UserChoice.math,
@@ -124,16 +126,16 @@ class StartAssessment extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Set up custom test card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
+                padding: EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.assessmentColors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.assessmentColors.border),
                 ),
                 child: Row(
                   children: [
@@ -141,17 +143,17 @@ class StartAssessment extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
+                        color: context.assessmentColors.primarySoft,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.tune_outlined,
                         color: AppColors.button,
                         size: 22,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    const Expanded(
+                    SizedBox(width: 14),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -160,7 +162,7 @@ class StartAssessment extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
-                              color: AppColors.text,
+                              color: context.assessmentColors.text,
                             ),
                           ),
                           SizedBox(height: 3),
@@ -168,7 +170,7 @@ class StartAssessment extends StatelessWidget {
                             'Customize words, passage or math problems',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.secondaryText,
+                              color: context.assessmentColors.secondaryText,
                             ),
                           ),
                         ],
@@ -180,7 +182,7 @@ class StartAssessment extends StatelessWidget {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.button,
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 10,
                         ),
@@ -189,7 +191,7 @@ class StartAssessment extends StatelessWidget {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Set up',
                         style: TextStyle(
                           color: Colors.white,
@@ -202,7 +204,7 @@ class StartAssessment extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
             ],
           ),
         ),
@@ -235,17 +237,20 @@ class SubjectCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Material(
-      color: Colors.white,
+      color: context.assessmentColors.surface,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(23, 23, 20, 21),
+          padding: EdgeInsets.fromLTRB(23, 23, 20, 21),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE9E5DE), width: 1),
+            border: Border.all(
+              color: context.assessmentColors.border,
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,8 +272,8 @@ class SubjectCard extends StatelessWidget {
                   Container(
                     width: 33,
                     height: 33,
-                    decoration: const BoxDecoration(
-                      color: AppColors.background,
+                    decoration: BoxDecoration(
+                      color: context.assessmentColors.background,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(Icons.chevron_right, color: color, size: 23),
@@ -276,7 +281,7 @@ class SubjectCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
               // Subject title
               Text(
@@ -288,7 +293,7 @@ class SubjectCard extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 3),
+              SizedBox(height: 3),
 
               // Description
               Text(

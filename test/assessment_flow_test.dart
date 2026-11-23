@@ -108,38 +108,14 @@ void main() {
   });
 
   // ── Widget (integration) tests ─────────────────────────────────────────────
-  // NOTE: Widget tests are skipped because they require full screen implementations
-  // and Firebase integration which is complex to mock. The unit tests for grading
-  // logic and AssessmentProvider are sufficient to verify core functionality.
-  // The select_class screen now correctly reads from Firestore via ClassProvider.
+  // Widget and integration tests have been moved to dedicated test files:
+  // - test/screens/assessment_screens_test.dart (widget tests for individual screens)
+  // - test/integration/assessment_flow_integration_test.dart (end-to-end flow tests)
+  // - test/providers/assessment_provider_test.dart (comprehensive provider unit tests)
+  //
+  // These files provide better organization and more comprehensive coverage
+  // of the assessment module functionality.
   group('Full Member 3 Flow Widget Tests', () {
-    // testWidgets(
-    //   'Complete reading journey: start -> select -> prepare -> check -> review',
-    //   (WidgetTester tester) async {
-    //     // Skipped - requires full screen implementations
-    //   },
-    // );
-
-    // testWidgets('Set up custom test flows for Reading and Math', (
-    //   WidgetTester tester,
-    // ) async {
-    //   // Skipped - requires full screen implementations
-    // });
-
-    // Skip this test for now - it requires ClassProvider with Firebase integration
-    // which is complex to mock in widget tests. The select_class screen now
-    // reads from Firestore via ClassProvider instead of hardcoded classes.
-    // testWidgets('Change class flow redirects back to choose assessment page', (
-    //   WidgetTester tester,
-    // ) async {
-    //   // Test implementation removed - requires Firebase mocking
-    // });
-
-    // testWidgets(
-    //   'Complete math journey: start -> select -> math check with 1-tap evaluation & rubric',
-    //   (WidgetTester tester) async {
-    //     // Skipped - requires full screen implementations
-    //   },
-    // );
+    // Tests moved to dedicated files for better organization
   });
 }

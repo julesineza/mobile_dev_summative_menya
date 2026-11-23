@@ -6,12 +6,14 @@ import '../services/auth_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/preferences_service.dart';
 import '../services/school_class_service.dart';
+import '../services/student_service.dart';
 import 'assessment_provider.dart';
 import 'auth_provider.dart';
 import 'class_provider.dart';
 import 'dashboard_provider.dart';
 import 'school_provider.dart';
 import 'settings_provider.dart';
+import 'student_provider.dart';
 
 /// Builds the full provider list, wiring both [SharedPreferences] and [PreferencesService]
 /// into [SettingsProvider] and seeding [AssessmentProvider] with the saved active class.
@@ -23,14 +25,27 @@ List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
   ChangeNotifierProvider<SettingsProvider>(
     create: (context) => SettingsProvider(prefs)..attachService(prefs),
   ),
-  ChangeNotifierProxyProvider<SettingsProvider, AssessmentProvider>(
+  ChangeNotifierProxyProvider2<
+    SettingsProvider,
+    ClassProvider,
+    AssessmentProvider
+  >(
     create: (_) => AssessmentProvider(initialClassName: prefs.activeClass),
-    update: (_, settings, previous) {
+    update: (_, settings, classes, previous) {
       // Keep provider in sync when the active class changes (e.g. user picks a new class).
       final provider =
           previous ??
           AssessmentProvider(initialClassName: settings.activeClass);
-      if (provider.selectedClassName != settings.activeClass &&
+      final selected = classes.selectedClass;
+      if (selected != null) {
+        // Prefer the real Firestore class document so the class id is the
+        // actual document id, not one derived from the class name.
+        provider.syncFromClass(
+          id: selected.id,
+          name: selected.name,
+          schoolId: selected.schoolId,
+        );
+      } else if (provider.selectedClassName != settings.activeClass &&
           settings.activeClass.isNotEmpty) {
         provider.syncClassFromSettings(settings.activeClass);
       }
@@ -82,7 +97,25 @@ List<SingleChildWidget> get authProviders => [
 ];
 
 /// Student / class analytics providers — owned by Member 2.
-List<SingleChildWidget> get studentProviders => [];
+List<SingleChildWidget> get studentProviders => [
+  ChangeNotifierProxyProvider<ClassProvider, StudentProvider>(
+    create: (_) => StudentProvider(StudentService()),
+    update: (_, classes, previous) {
+      final provider = previous!;
+      final selected = classes.selectedClass;
+      if (selected != null) {
+        provider.listenToClass(
+          selected.id,
+          schoolId: selected.schoolId,
+          className: selected.name,
+        );
+      } else {
+        provider.watchClass(null);
+      }
+      return provider;
+    },
+  ),
+];
 
 /// Assessment providers — owned by Member 3.
 List<SingleChildWidget> get assessmentProviders => [];

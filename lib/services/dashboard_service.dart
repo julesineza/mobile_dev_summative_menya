@@ -1,5 +1,6 @@
 // OWNER: Member 1. Read-only queries that feed the home dashboard.
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../core/firestore_paths.dart';
 import '../models/assessment_session.dart';
@@ -32,5 +33,17 @@ class DashboardService {
       .orderBy('createdAt', descending: true)
       .limit(limit)
       .snapshots()
-      .map((s) => s.docs.map(AssessmentSession.fromFirestore).toList());
+      .map(
+        (s) => s.docs
+            .map((doc) {
+              try {
+                return AssessmentSession.fromFirestore(doc);
+              } catch (e) {
+                debugPrint('[DashboardService] skipping session ${doc.id}: $e');
+                return null;
+              }
+            })
+            .whereType<AssessmentSession>()
+            .toList(),
+      );
 }
