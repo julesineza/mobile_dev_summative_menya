@@ -5,6 +5,7 @@ import 'package:mobile_dev_summative_menya/providers/assessment_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/colors.dart';
+import '../../core/failure.dart';
 import '../../core/theme/assessment_colors.dart';
 
 // ── Local UI-only model ───────────────────────────────────────────────────────
@@ -195,7 +196,15 @@ class _SelectLearnersPageState extends State<SelectLearnersPage> {
                                   )
                                   .toList(),
                             );
-                            await provider.prepareAssessment();
+                            try {
+                              await provider.prepareAssessment();
+                            } on Failure catch (e) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.message)),
+                              );
+                              return;
+                            }
 
                             if (!mounted) return;
                             final route =

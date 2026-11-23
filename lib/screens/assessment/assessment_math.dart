@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
 import '../../core/theme/assessment_colors.dart';
+import '../../core/failure.dart';
 import '../../core/grading.dart';
 import '../../models/enums.dart';
 import '../../providers/assessment_provider.dart';
@@ -150,8 +151,12 @@ class _AssessmentMathState extends State<AssessmentMath> {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saved locally for $learnerName.'),
-            backgroundColor: AppColors.button,
+            content: Text(
+              error is Failure
+                  ? error.message
+                  : 'Could not save $learnerName\'s result. Please try again.',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
