@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "879135523749-dfe8undg7ab76i7kalhpttk09d5trmoe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mobile_dev_summative_menya",
+            "certificate_hash": "fdf85e2f696a82434f0122c80558249cb344b979"
+          }
+        },
+        {
           "client_id": "879135523749-hbt4uuij67iacv02m7tdsrjaae9oofgr.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -18,6 +18,18 @@
 	<string>mobile_dev_summative_menya</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Firebase Auth (Google sign-in): "app-" + GOOGLE_APP_ID with ":" replaced by "-". Without it the app crashes on sign-in. -->
+				<string>app-1-879135523749-ios-486bef4d7b38efa072de4c</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
