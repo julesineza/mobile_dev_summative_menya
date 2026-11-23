@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:mobile_dev_summative_menya/core/failure.dart';
 import 'package:mobile_dev_summative_menya/models/enums.dart';
 import 'package:mobile_dev_summative_menya/models/student.dart';
 import 'package:mobile_dev_summative_menya/services/student_service.dart';
@@ -55,5 +56,31 @@ void main() {
     await service.deleteStudent('s1').timeout(const Duration(seconds: 1));
     verify(() => col.doc('s1')).called(1);
     verify(() => doc.delete()).called(1);
+  });
+
+  // The server says no, e.g. the Firestore rules block the write.
+  final denied = FirebaseException(
+    plugin: 'cloud_firestore',
+    code: 'permission-denied',
+  );
+
+  test('addStudent reports a rejected write through onError', () async {
+    when(() => doc.set(any())).thenAnswer((_) async => throw denied);
+    final failure = Completer<Failure>();
+
+    await service.addStudent(_student, onError: failure.complete);
+
+    final f = await failure.future.timeout(const Duration(seconds: 1));
+    expect(f.message, 'You do not have permission to do that.');
+  });
+
+  test('deleteStudent reports a rejected write through onError', () async {
+    when(() => doc.delete()).thenAnswer((_) async => throw denied);
+    final failure = Completer<Failure>();
+
+    await service.deleteStudent('s1', onError: failure.complete);
+
+    final f = await failure.future.timeout(const Duration(seconds: 1));
+    expect(f.message, 'You do not have permission to do that.');
   });
 }

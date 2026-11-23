@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/failure.dart';
 import '../core/firebase_guard.dart';
 import '../core/firestore_paths.dart';
 import '../models/assessment_result.dart';
@@ -72,18 +73,42 @@ class StudentService {
       guardFirebase(() => _students.doc(s.id).update(s.toMap()));
 
   /// CREATE: adds a student to the Firestore 'students' collection.
-  Future<void> addStudent(Student student) async {
-    _students
-        .doc()
-        .set(student.toMap())
-        .catchError((Object e) => debugPrint('Add student sync failed: $e'));
+  /// Returns straight away (works offline). If the server later rejects
+  /// the write, onError gets a friendly failure message.
+  Future<void> addStudent(
+    Student student, {
+    void Function(Failure failure)? onError,
+  }) async {
+    _syncInBackground(
+      () => _students.doc().set(student.toMap()),
+      onError: onError,
+    );
   }
 
-  /// DELETE: same , applied locally now and synced later.
-  Future<void> deleteStudent(String studentId) async {
-    _students
-        .doc(studentId)
-        .delete()
-        .catchError((Object e) => debugPrint('Delete student sync failed: $e'));
+  /// DELETE: same, applied locally now and synced later.
+  Future<void> deleteStudent(
+    String studentId, {
+    void Function(Failure failure)? onError,
+  }) async {
+    _syncInBackground(
+      () => _students.doc(studentId).delete(),
+      onError: onError,
+    );
+  }
+
+  /// Starts write without waiting for the server, so the UI never hangs
+  /// offline, but still reports a rejected write instead of hiding it.
+  void _syncInBackground(
+    Future<void> Function() write, {
+    void Function(Failure failure)? onError,
+  }) {
+    guardFirebase(write).catchError((Object e) {
+      debugPrint('[StudentService] sync failed: $e');
+      onError?.call(
+        e is Failure
+            ? e
+            : const Failure('Something went wrong. Please try again.'),
+      );
+    });
   }
 }

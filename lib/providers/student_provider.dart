@@ -20,6 +20,13 @@ class StudentProvider extends ChangeNotifier {
 
   ViewState state = ViewState.idle;
   String? error;
+
+  /// Set when the server rejects an add/delete that already showed as done.
+  String? syncError;
+
+  /// Set when assessment results can't load (the roster still works).
+  String? resultsError;
+  bool _disposed = false;
   String? classId;
   String className = '';
 
@@ -78,10 +85,19 @@ class StudentProvider extends ChangeNotifier {
     // no notifyListeners() the proxy provider rebuilds the screens itself
     _resultsSub = _service
         .streamClassResults(classId, schoolId: schoolId)
-        .listen((list) {
-          _results = list;
-          notifyListeners();
-        }, onError: (Object _) {}); // roster still works if results fail
+        .listen(
+          (list) {
+            _results = list;
+            resultsError = null;
+            notifyListeners();
+          },
+          onError: (Object e) {
+            // The roster still works; just say the results are missing.
+            debugPrint('[StudentProvider] results stream failed: $e');
+            resultsError = 'Could not load assessment results.';
+            notifyListeners();
+          },
+        );
     _sub = _service
         .streamStudents(classId, schoolId: schoolId)
         .listen(
@@ -91,8 +107,9 @@ class StudentProvider extends ChangeNotifier {
             notifyListeners();
           },
           onError: (Object e) {
+            debugPrint('[StudentProvider] students stream failed: $e');
             state = ViewState.error;
-            error = e.toString();
+            error = 'Could not load students. Check your connection.';
             notifyListeners();
           },
         );
@@ -158,14 +175,36 @@ class StudentProvider extends ChangeNotifier {
         rollNo: rollNo,
         status: SupportStatus.onTrack,
       ),
+      onError: (f) => _reportSyncError('Could not add $name. ${f.message}'),
     ),
   );
 
-  Future<bool> deleteStudent(String studentId) =>
-      _run(() => _service.deleteStudent(studentId));
+  Future<bool> deleteStudent(String studentId) {
+    final name = byId(studentId)?.name ?? 'the student';
+    return _run(
+      () => _service.deleteStudent(
+        studentId,
+        onError: (f) =>
+            _reportSyncError('Could not remove $name. ${f.message}'),
+      ),
+    );
+  }
+
+  /// Called later, when the server rejects a write the UI already accepted.
+  void _reportSyncError(String message) {
+    if (_disposed) return;
+    syncError = message;
+    notifyListeners();
+  }
+
+  void clearSyncError() {
+    syncError = null;
+    notifyListeners();
+  }
 
   @override
   void dispose() {
+    _disposed = true;
     _sub?.cancel();
     _resultsSub?.cancel();
     super.dispose();

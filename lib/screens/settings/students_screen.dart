@@ -7,6 +7,7 @@ import '../../models/student.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/student_widgets.dart';
 import 'student_form_dialog.dart';
 
 /// Lists the students of one class and lets the teacher add or remove them.
@@ -67,51 +68,63 @@ class StudentsScreen extends StatelessWidget {
         icon: const Icon(Icons.person_add_alt),
         label: const Text('Add student'),
       ),
-      body: Builder(
-        builder: (context) {
-          if (students.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (students.students.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'No students yet. Tap "Add student" to add the first one.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: palette.textSecondary),
-                ),
+      body: Column(
+        children: [
+          if (students.syncError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: SyncErrorBanner(
+                message: students.syncError,
+                onDismiss: students.clearSyncError,
               ),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            itemCount: students.students.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final student = students.students[index];
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    child: Text('${student.rollNo}'),
-                  ),
-                  title: Text(
-                    student.name,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  subtitle: Text(
-                    'Roll ${student.rollNo} · ${student.status.name}',
-                  ),
-                  trailing: IconButton(
-                    tooltip: 'Remove student',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _delete(context, student),
-                  ),
-                ),
-              );
-            },
-          );
-        },
+            ),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (students.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (students.students.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'No students yet. Tap "Add student" to add the first one.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: palette.textSecondary),
+                      ),
+                    ),
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  itemCount: students.students.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final student = students.students[index];
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(child: Text('${student.rollNo}')),
+                        title: Text(
+                          student.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(
+                          'Roll ${student.rollNo} · ${student.status.name}',
+                        ),
+                        trailing: IconButton(
+                          tooltip: 'Remove student',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _delete(context, student),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

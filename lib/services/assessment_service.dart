@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/failure.dart';
+import '../core/firebase_guard.dart';
 import '../core/firestore_paths.dart';
 import '../models/assessment_result.dart';
 import '../models/assessment_session.dart';
@@ -30,7 +32,7 @@ class AssessmentService {
   /// Fetches an assessment test from Firestore.
   /// If the test does not exist yet in Firestore, seeds it into Firestore so Firestore remains the source of truth.
   /// When Firestore is unavailable (e.g. in unit tests), returns the default built-in test so tests can run without network.
-  Future<AssessmentTest?> getTest({
+  Future<AssessmentTest> getTest({
     required String schoolId,
     required Subject subject,
     required int grade,
@@ -74,7 +76,9 @@ class AssessmentService {
       return defaultTest;
     } catch (e) {
       debugPrint('[AssessmentService] getTest error from Firestore: $e');
-      return null;
+      throw const Failure(
+        'Could not load the test. Check your connection and try again.',
+      );
     }
   }
 
@@ -179,7 +183,9 @@ class AssessmentService {
       return seeded;
     } catch (e) {
       debugPrint('[AssessmentService] getStudents error from Firestore: $e');
-      return const [];
+      throw const Failure(
+        'Could not load learners. Check your connection and try again.',
+      );
     }
   }
 
@@ -282,7 +288,7 @@ class AssessmentService {
         'lastAssessedAt': Timestamp.fromDate(result.createdAt),
       }, SetOptions(merge: true));
 
-      await batch.commit();
+      await guardFirebase(batch.commit);
       debugPrint(
         '[AssessmentService] Saved result directly to Firestore: $resultId',
       );
