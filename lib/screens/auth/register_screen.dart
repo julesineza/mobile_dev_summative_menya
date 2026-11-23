@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../app_routes.dart';
 import '../../core/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/school_provider.dart';
@@ -49,7 +51,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _password.text,
       schoolId: _school.value!,
     );
-    if (!ok && mounted) {
+    if (!mounted) return;
+    if (ok) {
+      showAppSnackBar(
+        context,
+        'Account created. Check your email for the verification link, then sign in.',
+      );
+      context.go(AppRoutes.login);
+    } else {
       showAppSnackBar(
         context,
         auth.errorMessage ?? 'Could not register.',

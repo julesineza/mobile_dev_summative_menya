@@ -43,7 +43,7 @@ class ResultSavedScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  LevelChip(label: level.label, color: level.color),
+                  LevelChip(label: level.label, color: level.colorOf(context)),
                 ],
               ),
             ),

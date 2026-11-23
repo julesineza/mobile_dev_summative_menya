@@ -4,6 +4,8 @@ import '../core/constants/colors.dart';
 import '../models/enums.dart';
 import '../models/student.dart';
 import '../core/constants/student_colors.dart';
+import '../core/theme/app_palette.dart';
+import '../core/theme/assessment_colors.dart';
 
 extension SupportStatusUi on SupportStatus {
   String get label => switch (this) {
@@ -11,16 +13,23 @@ extension SupportStatusUi on SupportStatus {
     SupportStatus.watch => 'Watch',
     SupportStatus.needsSupport => 'Needs support',
   };
-  Color get color => switch (this) {
-    SupportStatus.onTrack => AppColors.button,
-    SupportStatus.watch => StudentColors.watch,
-    SupportStatus.needsSupport => AppColors.warningStroke,
-  };
-  Color get fill => switch (this) {
-    SupportStatus.onTrack => AppColors.primarySoft,
-    SupportStatus.watch => StudentColors.watchFill,
-    SupportStatus.needsSupport => AppColors.warningFill,
-  };
+  Color colorOf(BuildContext context) {
+    final c = context.assessmentColors;
+    return switch (this) {
+      SupportStatus.onTrack => context.studentGreen,
+      SupportStatus.watch => context.palette.watchText,
+      SupportStatus.needsSupport => c.warningStroke,
+    };
+  }
+
+  Color fillOf(BuildContext context) {
+    final c = context.assessmentColors;
+    return switch (this) {
+      SupportStatus.onTrack => c.primarySoft,
+      SupportStatus.watch => c.amberSoft,
+      SupportStatus.needsSupport => c.warningFill,
+    };
+  }
 }
 
 extension ResponseLevelUi on ResponseLevel {
@@ -29,11 +38,14 @@ extension ResponseLevelUi on ResponseLevel {
     ResponseLevel.developing => 'Developing',
     ResponseLevel.proficient => 'Proficient',
   };
-  Color get color => switch (this) {
-    ResponseLevel.struggling => AppColors.warningStroke,
-    ResponseLevel.developing => StudentColors.watch,
-    ResponseLevel.proficient => AppColors.button,
-  };
+  Color colorOf(BuildContext context) {
+    final c = context.assessmentColors;
+    return switch (this) {
+      ResponseLevel.struggling => c.warningStroke,
+      ResponseLevel.developing => context.palette.watchText,
+      ResponseLevel.proficient => context.studentGreen,
+    };
+  }
 }
 
 String initialsOf(String name) => name
@@ -52,7 +64,7 @@ String lastAssessedLabel(DateTime? d) {
   return 'Last assessed ${days}d ago';
 }
 
-// Card with white background, rounded corners, and border.
+// Card with surface background, rounded corners, and border.
 class MenyaCard extends StatelessWidget {
   const MenyaCard({
     super.key,
@@ -63,16 +75,19 @@ class MenyaCard extends StatelessWidget {
   final EdgeInsets padding;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: padding,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: child,
-  );
+  Widget build(BuildContext context) {
+    final c = context.assessmentColors;
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
+      ),
+      child: child,
+    );
+  }
 }
 
 // Initials circle, with optional status dot (roster rows).
@@ -89,18 +104,19 @@ class StudentAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     return Stack(
       clipBehavior: Clip.none,
       children: [
         CircleAvatar(
           radius: radius,
-          backgroundColor: AppColors.primarySoft,
+          backgroundColor: c.primarySoft,
           child: Text(
             initialsOf(name),
             style: TextStyle(
               fontSize: radius * 0.6,
               fontWeight: FontWeight.w700,
-              color: AppColors.button,
+              color: context.studentGreen,
             ),
           ),
         ),
@@ -112,9 +128,9 @@ class StudentAvatar extends StatelessWidget {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: status!.color,
+                color: status!.colorOf(context),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: c.surface, width: 2),
               ),
             ),
           ),
@@ -129,22 +145,25 @@ class StatusBadge extends StatelessWidget {
   final SupportStatus status;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    decoration: BoxDecoration(
-      color: status.fill,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: status.color),
-    ),
-    child: Text(
-      status.label.toUpperCase(),
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: status.color,
+  Widget build(BuildContext context) {
+    final color = status.colorOf(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: status.fillOf(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
       ),
-    ),
-  );
+      child: Text(
+        status.label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
 }
 
 /// Filter pill used in roster filter bar.
@@ -161,11 +180,12 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final shape = StadiumBorder(
-      side: BorderSide(color: selected ? AppColors.button : AppColors.border),
+      side: BorderSide(color: selected ? AppColors.button : c.border),
     );
     return Material(
-      color: selected ? AppColors.button : Colors.white,
+      color: selected ? AppColors.button : c.surface,
       shape: shape,
       child: InkWell(
         customBorder: shape,
@@ -177,7 +197,7 @@ class FilterPill extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? AppColors.onButton : AppColors.text,
+              color: selected ? AppColors.onButton : c.text,
             ),
           ),
         ),
@@ -200,12 +220,13 @@ class StudentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final radius = BorderRadius.circular(14);
     return Material(
-      color: Colors.white,
+      color: c.surface,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: c.border),
       ),
       child: InkWell(
         borderRadius: radius,
@@ -222,9 +243,9 @@ class StudentRow extends StatelessWidget {
                   children: [
                     Text(
                       student.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.text,
+                        color: c.text,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -232,18 +253,55 @@ class StudentRow extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryText,
-                      ),
+                      style: TextStyle(fontSize: 12, color: c.secondaryText),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.secondaryText),
+              Icon(Icons.chevron_right, color: c.secondaryText),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Red error banner. Shows nothing when message is null.
+// The close button only appears when onDismiss is given.
+class SyncErrorBanner extends StatelessWidget {
+  const SyncErrorBanner({super.key, required this.message, this.onDismiss});
+  final String? message;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = message;
+    if (text == null) return const SizedBox.shrink();
+    final c = context.assessmentColors;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      constraints: const BoxConstraints(minHeight: 48),
+      decoration: BoxDecoration(
+        color: c.warningFill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.warningStroke),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, size: 20, color: c.warningStroke),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 13, color: c.text)),
+          ),
+          if (onDismiss != null)
+            IconButton(
+              tooltip: 'Dismiss',
+              icon: Icon(Icons.close, size: 18, color: c.text),
+              onPressed: onDismiss,
+            ),
+        ],
       ),
     );
   }

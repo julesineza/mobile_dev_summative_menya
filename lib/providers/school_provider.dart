@@ -24,9 +24,10 @@ class SchoolProvider extends ChangeNotifier {
   }
 
   /// Safe to call from initState: it only notifies after the first await.
+  /// An empty list is reloaded each time so newly added schools show up.
   Future<void> load({bool force = false}) async {
     if (state == ViewState.loading) return;
-    if (state == ViewState.success && !force) return;
+    if (state == ViewState.success && schools.isNotEmpty && !force) return;
 
     state = ViewState.loading;
     errorMessage = null;

@@ -339,9 +339,11 @@ class LevelSelector extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: selected == l ? l.color.withAlpha(25) : Colors.white,
+                color: selected == l
+                    ? l.colorOf(context).withAlpha(25)
+                    : Colors.white,
                 border: Border.all(
-                  color: selected == l ? l.color : AppColors.border,
+                  color: selected == l ? l.colorOf(context) : AppColors.border,
                   width: selected == l ? 1.6 : 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -361,7 +363,9 @@ class LevelSelector extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: selected == l ? l.color : AppColors.secondaryText,
+                      color: selected == l
+                          ? l.colorOf(context)
+                          : AppColors.secondaryText,
                     ),
                   ),
                 ],

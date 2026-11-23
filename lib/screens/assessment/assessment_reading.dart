@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
+import '../../core/failure.dart';
 import '../../core/grading.dart';
 import '../../models/enums.dart';
 import '../../providers/assessment_provider.dart';
@@ -63,8 +65,12 @@ class _AssessmentReadingState extends State<AssessmentReading> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saved locally for $learnerName.'),
-            backgroundColor: AppColors.button,
+            content: Text(
+              error is Failure
+                  ? error.message
+                  : 'Could not save $learnerName\'s result. Please try again.',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
         setState(() => _isSaving = false);
@@ -72,12 +78,15 @@ class _AssessmentReadingState extends State<AssessmentReading> {
     }
   }
 
-  void _skipLearner() {
+  Future<void> _skipLearner() async {
     final provider = context.read<AssessmentProvider>();
     if (provider.hasNextLearner) {
       provider.skipCurrentLearner();
       context.pushReplacement(AppRoutes.prepareReading);
     } else {
+      // Last learner skipped: close the session so it is not left open.
+      await provider.finishSession();
+      if (!mounted) return;
       context.go(AppRoutes.assess);
     }
   }
@@ -98,19 +107,19 @@ class _AssessmentReadingState extends State<AssessmentReading> {
     final totalLearners = provider.totalLearners;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.assessmentColors.background,
       body: SafeArea(
         child: Column(
           children: [
             // Header Top Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.chevron_left, color: green, size: 20),
                         Text(
@@ -126,10 +135,10 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                   ),
                   Text(
                     'LEARNER $learnerIndex OF $totalLearners • 4 OF 6',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
-                      color: Colors.black54,
+                      color: context.assessmentColors.secondaryText,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -139,7 +148,7 @@ class _AssessmentReadingState extends State<AssessmentReading> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
                   // Learner Header
                   if (learner != null)
@@ -147,34 +156,34 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                       children: [
                         CircleAvatar(
                           radius: 20,
-                          backgroundColor: AppColors.primarySoft,
+                          backgroundColor: context.assessmentColors.primarySoft,
                           child: Text(
                             learner.initials,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: green,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 '${learner.name}: Reading review',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.text,
+                                  color: context.assessmentColors.text,
                                 ),
                               ),
                               Text(
                                 '${learner.className} • Duration: ${durationSec}s',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.black54,
+                                  color: context.assessmentColors.secondaryText,
                                 ),
                               ),
                             ],
@@ -183,18 +192,17 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                       ],
                     ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Metrics Cards
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 12,
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                        color: context.assessmentColors.border,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -202,117 +210,121 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                         _MetricItem(
                           value: '${accuracy.toStringAsFixed(0)}%',
                           label: 'Accuracy',
-                          color: accuracy >= 90
+                          color: accuracy >= Grading.proficientCutoff
                               ? green
-                              : (accuracy >= 70
+                              : (accuracy >= Grading.developingCutoff
                                     ? Colors.amber.shade800
-                                    : AppColors.warningStroke),
+                                    : context.assessmentColors.warningStroke),
                         ),
                         Container(
                           width: 1,
                           height: 36,
-                          color: AppColors.divider,
+                          color: context.assessmentColors.divider,
                         ),
                         _MetricItem(
-                          value: '${wpm.toStringAsFixed(0)}',
+                          value: wpm.toStringAsFixed(0),
                           label: 'WPM',
-                          color: AppColors.text,
+                          color: context.assessmentColors.text,
                         ),
                         Container(
                           width: 1,
                           height: 36,
-                          color: AppColors.divider,
+                          color: context.assessmentColors.divider,
                         ),
                         _MetricItem(
                           value: '$errorCount',
                           label: 'Mistakes',
                           color: errorCount > 0
-                              ? AppColors.warningStroke
+                              ? context.assessmentColors.warningStroke
                               : green,
                         ),
                         Container(
                           width: 1,
                           height: 36,
-                          color: AppColors.divider,
+                          color: context.assessmentColors.divider,
                         ),
                         _MetricItem(
                           value: '${durationSec}s',
                           label: 'Time',
-                          color: AppColors.text,
+                          color: context.assessmentColors.text,
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Passage Review with Errors
-                  const Text(
+                  Text(
                     'ASSESSED PASSAGE',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.secondaryText,
+                      color: context.assessmentColors.secondaryText,
                       letterSpacing: 0.6,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                        color: context.assessmentColors.border,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '"${test?.passageText ?? ''}"',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             height: 1.4,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.text,
+                            color: context.assessmentColors.text,
                           ),
                         ),
                         if (provider.errorWords.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          const Divider(),
-                          const SizedBox(height: 6),
-                          const Text(
+                          SizedBox(height: 12),
+                          Divider(),
+                          SizedBox(height: 6),
+                          Text(
                             'Misread words:',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.warningStroke,
+                              color: context.assessmentColors.warningStroke,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Wrap(
                             spacing: 6,
                             runSpacing: 6,
                             children: provider.errorWords.map((word) {
                               return Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.warningFill,
+                                  color: context.assessmentColors.warningFill,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: AppColors.warningStroke,
+                                    color:
+                                        context.assessmentColors.warningStroke,
                                     width: 0.8,
                                   ),
                                 ),
                                 child: Text(
                                   word,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.warningStroke,
+                                    color:
+                                        context.assessmentColors.warningStroke,
                                   ),
                                 ),
                               );
@@ -323,33 +335,33 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Rubric Selector Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'SELECT A RESPONSE LEVEL',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.secondaryText,
+                          color: context.assessmentColors.secondaryText,
                           letterSpacing: 0.6,
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primarySoft,
+                          color: context.assessmentColors.primarySoft,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'Suggested: Level ${autoSuggestedLevel.value}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: green,
@@ -358,7 +370,7 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
 
                   // 1 - 2 - 3 Rubric Selector
                   Row(
@@ -367,19 +379,21 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                       final isSuggested = autoSuggestedLevel == level;
                       return Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 4),
                           child: GestureDetector(
                             onTap: () => setState(() => _level = level),
                             child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              duration: Duration(milliseconds: 150),
+                              padding: EdgeInsets.symmetric(vertical: 14),
                               decoration: BoxDecoration(
                                 color: selected
-                                    ? AppColors.primarySoft
-                                    : Colors.white,
+                                    ? context.assessmentColors.primarySoft
+                                    : context.assessmentColors.surface,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: selected ? green : AppColors.border,
+                                  color: selected
+                                      ? green
+                                      : context.assessmentColors.border,
                                   width: selected ? 2 : 1,
                                 ),
                               ),
@@ -391,10 +405,12 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w900,
-                                      color: selected ? green : AppColors.text,
+                                      color: selected
+                                          ? green
+                                          : context.assessmentColors.text,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  SizedBox(height: 2),
                                   Text(
                                     _responseLevelLabel(level),
                                     style: TextStyle(
@@ -402,23 +418,27 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                                       fontWeight: selected
                                           ? FontWeight.w800
                                           : FontWeight.w600,
-                                      color: selected ? green : Colors.black87,
+                                      color: selected
+                                          ? green
+                                          : context.assessmentColors.text,
                                     ),
                                   ),
                                   if (isSuggested) ...[
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         horizontal: 6,
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
                                         color: selected
-                                            ? Colors.white
-                                            : AppColors.primarySoft,
+                                            ? context.assessmentColors.surface
+                                            : context
+                                                  .assessmentColors
+                                                  .primarySoft,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'Suggested',
                                         style: TextStyle(
                                           fontSize: 9,
@@ -437,24 +457,27 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                     }).toList(),
                   ),
 
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // Level Descriptions
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.assessmentColors.surface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                        color: context.assessmentColors.border,
+                      ),
                     ),
-                    child: const Text(
-                      '1  Struggling — accuracy < 70%, needs frequent help\n'
-                      '2  Developing — accuracy 70-89%, reads with support\n'
-                      '3  Proficient — accuracy ≥ 90%, reads independently',
+                    child: Text(
+                      // Same cutoffs as the "Suggested" level (core/grading.dart).
+                      '1  Struggling — accuracy < ${_pct(Grading.developingCutoff)}%, needs frequent help\n'
+                      '2  Developing — accuracy ${_pct(Grading.developingCutoff)}% to under ${_pct(Grading.proficientCutoff)}%, reads with support\n'
+                      '3  Proficient — accuracy ≥ ${_pct(Grading.proficientCutoff)}%, reads independently',
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.6,
-                        color: Color(0xFF555F5A),
+                        color: context.assessmentColors.secondaryText,
                       ),
                     ),
                   ),
@@ -464,8 +487,8 @@ class _AssessmentReadingState extends State<AssessmentReading> {
 
             // Bottom Actions
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              color: context.assessmentColors.surface,
+              padding: EdgeInsets.fromLTRB(20, 14, 20, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -482,7 +505,7 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                         elevation: 0,
                       ),
                       child: _isSaving
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
@@ -497,14 +520,14 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                                   provider.hasNextLearner
                                       ? 'Save & next learner (${learnerIndex + 1}/$totalLearners)'
                                       : 'Finish assessment',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Icon(
+                                SizedBox(width: 8),
+                                Icon(
                                   Icons.arrow_forward,
                                   color: Colors.white,
                                   size: 20,
@@ -514,17 +537,17 @@ class _AssessmentReadingState extends State<AssessmentReading> {
                     ),
                   ),
                   if (provider.hasNextLearner) ...[
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       height: 38,
                       child: TextButton(
                         onPressed: _isSaving ? null : _skipLearner,
-                        child: const Text(
+                        child: Text(
                           'Skip this learner for now',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.secondaryText,
+                            color: context.assessmentColors.secondaryText,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -539,6 +562,8 @@ class _AssessmentReadingState extends State<AssessmentReading> {
       ),
     );
   }
+
+  static String _pct(double value) => value.toStringAsFixed(0);
 
   String _responseLevelLabel(ResponseLevel level) => switch (level) {
     ResponseLevel.struggling => 'Struggling',
@@ -570,10 +595,13 @@ class _MetricItem extends StatelessWidget {
             color: color,
           ),
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: 12,
+            color: context.assessmentColors.secondaryText,
+          ),
         ),
       ],
     );

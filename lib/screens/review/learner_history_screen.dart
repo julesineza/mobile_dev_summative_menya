@@ -194,7 +194,7 @@ class _CheckCard extends StatelessWidget {
                       ),
                       LevelChip(
                         label: result.level.label,
-                        color: result.level.color,
+                        color: result.level.colorOf(context),
                       ),
                     ],
                   ),

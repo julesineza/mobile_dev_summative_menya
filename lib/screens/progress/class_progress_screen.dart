@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants/colors.dart';
 import '../../core/view_state.dart';
 import '../../models/assessment_result.dart';
 import '../../models/enums.dart';
@@ -10,6 +9,8 @@ import '../../models/student.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/student_widgets.dart';
 import '../../core/constants/student_colors.dart';
+import '../../core/theme/app_palette.dart';
+import '../../core/theme/assessment_colors.dart';
 
 class ClassProgressScreen extends StatefulWidget {
   const ClassProgressScreen({super.key});
@@ -22,11 +23,12 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
+    final c = context.assessmentColors;
 
     if (p.state == ViewState.loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: c.background,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -36,40 +38,41 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
     final results = p.results;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text(
+            Text(
               'Class Progress',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppColors.text,
+                color: c.text,
               ),
             ),
             const SizedBox(height: 16),
+            SyncErrorBanner(message: p.resultsError),
             MenyaCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'Class overview',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.text,
+                          color: c.text,
                         ),
                       ),
                       const Spacer(),
                       Text(
                         '${p.total} students · ${p.className}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.button,
+                          color: context.studentGreen,
                         ),
                       ),
                     ],
@@ -88,15 +91,15 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
                     runSpacing: 6,
                     children: [
                       _Legend(
-                        color: SupportStatus.onTrack.color,
+                        color: SupportStatus.onTrack.colorOf(context),
                         text: 'On track ($onTrack)',
                       ),
                       _Legend(
-                        color: SupportStatus.watch.color,
+                        color: SupportStatus.watch.colorOf(context),
                         text: 'Watch ($watch)',
                       ),
                       _Legend(
-                        color: SupportStatus.needsSupport.color,
+                        color: SupportStatus.needsSupport.colorOf(context),
                         text: 'Support ($support)',
                       ),
                     ],
@@ -105,12 +108,12 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Subject Progress',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.text,
+                color: c.text,
               ),
             ),
             const SizedBox(height: 12),
@@ -124,19 +127,19 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
               percent: _competentPercent(results, Subject.math),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Students Needing Attention',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.text,
+                color: c.text,
               ),
             ),
             const SizedBox(height: 10),
             if (p.needsAttention.isEmpty)
-              const Text(
+              Text(
                 'No learners flagged right now.',
-                style: TextStyle(color: AppColors.secondaryText),
+                style: TextStyle(color: c.secondaryText),
               )
             else
               for (final s in p.needsAttention)
@@ -197,9 +200,9 @@ class _StackedBar extends StatelessWidget {
       child: SizedBox(
         height: 14,
         child: parts.isEmpty
-            ? const ColoredBox(
-                color: AppColors.divider,
-                child: SizedBox.expand(),
+            ? ColoredBox(
+                color: context.assessmentColors.divider,
+                child: const SizedBox.expand(),
               )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -207,7 +210,7 @@ class _StackedBar extends StatelessWidget {
                   for (final e in parts)
                     Expanded(
                       flex: e.value,
-                      child: ColoredBox(color: e.key.color),
+                      child: ColoredBox(color: e.key.colorOf(context)),
                     ),
                 ],
               ),
@@ -233,7 +236,10 @@ class _Legend extends StatelessWidget {
       const SizedBox(width: 6),
       Text(
         text,
-        style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+        style: TextStyle(
+          fontSize: 12,
+          color: context.assessmentColors.secondaryText,
+        ),
       ),
     ],
   );
@@ -246,14 +252,15 @@ class _SubjectBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final pct = percent;
     final color = pct == null
-        ? AppColors.secondaryText
+        ? c.secondaryText
         : pct >= 70
-        ? AppColors.button
+        ? context.studentGreen
         : pct >= 50
-        ? StudentColors.watch
-        : AppColors.warningStroke;
+        ? context.palette.watchText
+        : c.warningStroke;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -261,10 +268,7 @@ class _SubjectBar extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.text,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600, color: c.text),
             ),
             const Spacer(),
             Text(
@@ -284,7 +288,7 @@ class _SubjectBar extends StatelessWidget {
             value: (pct ?? 0) / 100,
             minHeight: 8,
             color: color,
-            backgroundColor: AppColors.divider,
+            backgroundColor: c.divider,
           ),
         ),
       ],
@@ -304,12 +308,13 @@ class _AttentionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.assessmentColors;
     final radius = BorderRadius.circular(14);
     return Material(
-      color: AppColors.warningFill,
+      color: c.warningFill,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: BorderSide(color: AppColors.warningStroke.withValues(alpha: 0.5)),
+        side: BorderSide(color: c.warningStroke.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         borderRadius: radius,
@@ -326,23 +331,20 @@ class _AttentionRow extends StatelessWidget {
                   children: [
                     Text(
                       student.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.text,
+                        color: c.text,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       reason,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryText,
-                      ),
+                      style: TextStyle(fontSize: 12, color: c.secondaryText),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.error_outline, color: AppColors.warningStroke),
+              Icon(Icons.error_outline, color: c.warningStroke),
             ],
           ),
         ),

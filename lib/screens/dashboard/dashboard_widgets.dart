@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/colors.dart';
+import '../../core/constants/student_colors.dart';
 import '../../core/date_labels.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/assessment_session.dart';
 import '../../models/enums.dart';
@@ -30,10 +30,7 @@ class DashboardHeader extends StatelessWidget {
             children: [
               Text(
                 dateLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: context.palette.textSecondary,
-                ),
+                style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
               ),
               Text(
                 name,
@@ -77,11 +74,10 @@ class OverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: palette.needsSupportBg,
+        color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -89,19 +85,19 @@ class OverviewCard extends StatelessWidget {
         children: [
           Text(
             selected.name,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: palette.needsSupportText,
+              color: AppColors.button,
             ),
           ),
           if (classes.length > 1)
-            Icon(Icons.arrow_drop_down, color: palette.needsSupportText),
+            const Icon(Icons.arrow_drop_down, color: AppColors.button),
         ],
       ),
     );
 
-    return Card(
+    return _DashCard(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -116,7 +112,7 @@ class OverviewCard extends StatelessWidget {
                       fontSize: 10,
                       letterSpacing: 0.6,
                       fontWeight: FontWeight.w700,
-                      color: palette.textSecondary,
+                      color: AppColors.secondaryText,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -135,7 +131,7 @@ class OverviewCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: palette.watchText,
+                            color: StudentColors.watch,
                           ),
                         ),
                       ],
@@ -210,10 +206,7 @@ class StatCard extends StatelessWidget {
           ),
           Text(
             caption,
-            style: TextStyle(
-              fontSize: 11,
-              color: context.palette.textSecondary,
-            ),
+            style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
           ),
         ],
       ),
@@ -228,7 +221,7 @@ class QuickCheckCta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.action,
+      color: AppColors.button,
       borderRadius: BorderRadius.circular(AppSpacing.radius),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radius),
@@ -272,22 +265,21 @@ class RecentCheckTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     final isReading = session.subject == Subject.reading;
     final count = session.studentIds.length;
-    return Card(
+    return _DashCard(
       child: ListTile(
         leading: Container(
           height: 36,
           width: 36,
           decoration: BoxDecoration(
-            color: palette.needsSupportBg,
+            color: isReading ? AppColors.primarySoft : StudentColors.watchFill,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             isReading ? Icons.menu_book_rounded : Icons.calculate_rounded,
             size: 18,
-            color: palette.needsSupportText,
+            color: isReading ? AppColors.button : StudentColors.watch,
           ),
         ),
         title: Text(
@@ -299,7 +291,7 @@ class RecentCheckTile extends StatelessWidget {
           '${count == 1 ? 'learner' : 'learners'}',
           style: const TextStyle(fontSize: 11),
         ),
-        trailing: Icon(Icons.chevron_right, color: palette.textHint),
+        trailing: Icon(Icons.chevron_right, color: AppColors.secondaryText),
       ),
     );
   }
@@ -324,21 +316,20 @@ class EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Card(
+    return _DashCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
         child: Center(
           child: Column(
             children: [
-              Icon(icon, size: 36, color: palette.textHint),
+              Icon(icon, size: 36, color: AppColors.secondaryText),
               const SizedBox(height: 8),
               Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: palette.textSecondary),
+                style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
               ),
               if (actionLabel != null) ...[
                 const SizedBox(height: 12),
@@ -367,10 +358,32 @@ class InlineError extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => _DashCard(
     child: Padding(
       padding: const EdgeInsets.all(16),
-      child: Text(message, style: const TextStyle(color: AppColors.danger)),
+      child: Text(
+        message,
+        style: const TextStyle(color: AppColors.warningStroke),
+      ),
     ),
   );
+}
+
+class _DashCard extends StatelessWidget {
+  const _DashCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Card(
+      color: isDark ? null : Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        side: BorderSide(color: isDark ? Colors.white12 : AppColors.border),
+      ),
+      child: child,
+    );
+  }
 }

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_routes.dart';
-import '../../core/theme/app_palette.dart';
+import '../../core/constants/colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/view_state.dart';
 import '../../providers/auth_provider.dart';
@@ -21,7 +21,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     final auth = context.watch<AuthProvider>();
     final classes = context.watch<ClassProvider>();
     final dashboard = context.watch<DashboardProvider>();
@@ -74,8 +73,8 @@ class HomeScreen extends StatelessWidget {
                     label: 'ON TRACK',
                     value: dashboard.summary.onTrack,
                     caption: 'Reading & Math',
-                    color: palette.onTrackText,
-                    background: palette.onTrackBg,
+                    color: AppColors.button,
+                    background: AppColors.primarySoft,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -84,8 +83,8 @@ class HomeScreen extends StatelessWidget {
                     label: 'NEEDS SUPPORT',
                     value: dashboard.summary.needsSupport,
                     caption: 'Active support',
-                    color: palette.needsSupportText,
-                    background: palette.needsSupportBg,
+                    color: AppColors.warningStroke,
+                    background: AppColors.warningFill,
                   ),
                 ),
               ],

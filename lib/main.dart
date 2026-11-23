@@ -1,13 +1,12 @@
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+import 'firebase_options.dart';
 import 'app_routes.dart';
 import 'core/constants/app_theme.dart';
-import 'firebase_options.dart';
 import 'providers/app_providers.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
@@ -19,17 +18,10 @@ Future<void> main() async {
   // Load both SharedPreferences and PreferencesService for compatibility
   final sharedPrefs = await SharedPreferences.getInstance();
   final prefs = await PreferencesService.init();
-
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // Anonymous auth for assessment functionality
-    if (firebase_auth.FirebaseAuth.instance.currentUser == null) {
-      await firebase_auth.FirebaseAuth.instance.signInAnonymously().timeout(
-        const Duration(seconds: 4),
-      );
-    }
   } catch (error) {
     debugPrint('[Firebase Startup Warning]: $error');
     // Firebase failure does not block the app — preferences still load normally.

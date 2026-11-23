@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants/colors.dart';
+import '../../core/theme/assessment_colors.dart';
 import '../../core/view_state.dart';
 import '../../models/enums.dart';
 import '../../models/student.dart';
@@ -15,13 +15,14 @@ class StudentRosterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
+    final c = context.assessmentColors;
     final fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: BorderSide(color: c.border),
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -29,25 +30,24 @@ class StudentRosterScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Student Roster',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.text,
+                  color: c.text,
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 onChanged: p.setQuery,
+                style: TextStyle(color: c.text),
                 decoration: InputDecoration(
                   hintText: 'Search student name...',
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.secondaryText,
-                  ),
+                  hintStyle: TextStyle(color: c.hint),
+                  prefixIcon: Icon(Icons.search, color: c.secondaryText),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: c.surface,
                   isDense: true,
                   border: fieldBorder,
                   enabledBorder: fieldBorder,
@@ -80,6 +80,10 @@ class StudentRosterScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              SyncErrorBanner(
+                message: p.syncError,
+                onDismiss: p.clearSyncError,
+              ),
               Expanded(child: _list(context, p)),
             ],
           ),
@@ -89,11 +93,17 @@ class StudentRosterScreen extends StatelessWidget {
   }
 
   Widget _list(BuildContext context, StudentProvider p) {
+    final c = context.assessmentColors;
     if (p.state == ViewState.loading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (p.state == ViewState.error) {
-      return Center(child: Text(p.error ?? 'Could not load students.'));
+      return Center(
+        child: Text(
+          p.error ?? 'Could not load students.',
+          style: TextStyle(color: c.text),
+        ),
+      );
     }
     final List<Student> students = p.visible;
     if (students.isEmpty) {
@@ -102,7 +112,7 @@ class StudentRosterScreen extends StatelessWidget {
           p.state == ViewState.idle
               ? 'No class selected.'
               : 'No students match.',
-          style: const TextStyle(color: AppColors.secondaryText),
+          style: TextStyle(color: c.secondaryText),
         ),
       );
     }

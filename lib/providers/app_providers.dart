@@ -7,6 +7,7 @@ import '../services/club_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/preferences_service.dart';
 import '../services/school_class_service.dart';
+import '../services/student_service.dart';
 import '../services/support_plan_service.dart';
 import 'assessment_provider.dart';
 import 'auth_provider.dart';
@@ -15,11 +16,10 @@ import 'dashboard_provider.dart';
 import 'review_provider.dart';
 import 'school_provider.dart';
 import 'settings_provider.dart';
-import '../services/student_service.dart';
 import 'student_provider.dart';
 
 /// Builds the full provider list, wiring both [SharedPreferences] and [PreferencesService]
-/// into [SettingsProvider] and seeding [AssessmentProvider] with the saved active class.
+/// into [SettingsProvider] and keeping [AssessmentProvider] on the selected class.
 ///
 /// Call this from [main.dart] after both preference services have been initialized.
 List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
@@ -28,16 +28,23 @@ List<SingleChildWidget> buildProviders(PreferencesService prefs) => [
   ChangeNotifierProvider<SettingsProvider>(
     create: (context) => SettingsProvider(prefs)..attachService(prefs),
   ),
-  ChangeNotifierProxyProvider<SettingsProvider, AssessmentProvider>(
-    create: (_) => AssessmentProvider(initialClassName: prefs.activeClass),
-    update: (_, settings, previous) {
-      // Keep provider in sync when the active class changes (e.g. user picks a new class).
-      final provider =
-          previous ??
-          AssessmentProvider(initialClassName: settings.activeClass);
-      if (provider.selectedClassName != settings.activeClass &&
-          settings.activeClass.isNotEmpty) {
-        provider.syncClassFromSettings(settings.activeClass);
+  // Assessment (Member 3): the active class always comes from the teacher's
+  // real classes in ClassProvider. No class -> no fallback, the screens ask
+  // the teacher to create one.
+  ChangeNotifierProxyProvider<ClassProvider, AssessmentProvider>(
+    create: (_) => AssessmentProvider(),
+    update: (_, classes, previous) {
+      final provider = previous ?? AssessmentProvider();
+      final selected = classes.selectedClass;
+      if (selected != null) {
+        provider.syncFromClass(
+          id: selected.id,
+          name: selected.name,
+          schoolId: selected.schoolId,
+          grade: selected.grade,
+        );
+      } else {
+        provider.clearClass();
       }
       return provider;
     },
@@ -86,15 +93,23 @@ List<SingleChildWidget> get authProviders => [
   ),
 ];
 
+/// Student / class analytics providers — owned by Member 2.
 List<SingleChildWidget> get studentProviders => [
   ChangeNotifierProxyProvider<ClassProvider, StudentProvider>(
     create: (_) => StudentProvider(StudentService()),
     update: (_, classes, previous) {
-      final c = classes.selectedClass;
-      if (c != null) {
-        previous!.listenToClass(c.id, schoolId: c.schoolId, className: c.name);
+      final provider = previous!;
+      final selected = classes.selectedClass;
+      if (selected != null) {
+        provider.listenToClass(
+          selected.id,
+          schoolId: selected.schoolId,
+          className: selected.name,
+        );
+      } else {
+        provider.watchClass(null);
       }
-      return previous!;
+      return provider;
     },
   ),
 ];

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import 'models/school_class.dart';
 import 'providers/auth_provider.dart';
 import 'screens/assessment/assessment_math.dart';
 import 'screens/assessment/assessment_reading.dart';
@@ -19,6 +20,7 @@ import 'screens/auth/verify_email_screen.dart';
 import 'screens/dashboard/home_screen.dart';
 import 'screens/settings/classes_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'screens/settings/students_screen.dart';
 import 'screens/students/student_roster_screen.dart';
 import 'screens/students/student_profile_screen.dart';
 import 'screens/progress/class_progress_screen.dart';
@@ -31,7 +33,6 @@ import 'screens/review/support_plan_screen.dart';
 import 'widgets/app_shell.dart';
 
 /// All route paths in one place (lib/app_routes.dart). Add yours via PR.
-
 class AppRoutes {
   static const splash = '/splash'; // Member 1
   static const login = '/login';
@@ -45,10 +46,13 @@ class AppRoutes {
   static const students = '/students';
   static const studentProfile = '/students/:id';
   static const assess = '/assess';
-  static const assessReading = '/assess/reading';
+  // Member 3's older name for the same route; kept so nothing breaks.
+  // ignore: constant_identifier_names
+  static const start_assessment = assess;
+  static const assessReading = '/assess/reading'; // reading review + rubric
   static const assessMath = '/assess/math';
-  static const prepareReading = '/assess/reading/prepare';
-  static const takeReading = '/assess/reading/prepare/take';
+  static const prepareReading = '/assess/prepare-reading';
+  static const takeReading = '/assess/take-reading';
   static const selectLearners = '/assess/select-learners';
   static const selectClass = '/assess/select-class';
   static const setupReading = '/assess/setup-reading';
@@ -96,23 +100,18 @@ List<RouteBase> get assessmentRoutes => [
   GoRoute(
     path: AppRoutes.assess,
     builder: (_, _) => const StartAssessment(),
+    // Flat siblings: prepare -> take -> review are pushed in order, so a
+    // page is never built underneath another one with no data.
     routes: [
       GoRoute(
-        path: 'reading',
-        builder: (_, _) => const AssessmentReading(),
-        routes: [
-          GoRoute(
-            path: 'prepare',
-            builder: (_, _) => const PrepareReadingPage(),
-            routes: [
-              GoRoute(
-                path: 'take',
-                builder: (_, _) => const ReadingPausedPage(),
-              ),
-            ],
-          ),
-        ],
+        path: 'prepare-reading',
+        builder: (_, _) => const PrepareReadingPage(),
       ),
+      GoRoute(
+        path: 'take-reading',
+        builder: (_, _) => const ReadingPausedPage(),
+      ),
+      GoRoute(path: 'reading', builder: (_, _) => const AssessmentReading()),
       GoRoute(path: 'math', builder: (_, _) => const AssessmentMath()),
       GoRoute(
         path: 'select-learners',
@@ -193,6 +192,8 @@ String? authRedirect(AuthProvider auth, String location) {
   if (!auth.initialized) {
     return location == AppRoutes.splash ? null : AppRoutes.splash;
   }
+  // While registering, stay on the form; the screen sends the user to login.
+  if (auth.isRegistering) return null;
   if (!auth.isSignedIn) {
     return _publicRoutes.contains(location) ? null : AppRoutes.login;
   }
@@ -242,6 +243,11 @@ GoRouter createRouter(AuthProvider auth) {
         builder: (_, _) => const SettingsScreen(),
         routes: [
           GoRoute(path: 'classes', builder: (_, _) => const ClassesScreen()),
+          GoRoute(
+            path: 'classes/:classId/students',
+            builder: (_, state) =>
+                StudentsScreen(schoolClass: state.extra! as SchoolClass),
+          ),
         ],
       ),
       ...reviewRoutes,
