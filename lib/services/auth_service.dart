@@ -1,29 +1,22 @@
 // OWNER: Member 1. Email/password + Google sign-in, register (teacher picks a school), login, logout.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../core/failure.dart';
 import '../core/firebase_guard.dart';
 import '../core/firestore_paths.dart';
 import '../models/app_user.dart';
 
-/// Talks to Firebase Auth, Google Sign-In and the `users` collection.
+/// Talks to Firebase Auth and the `users` collection.
 /// Every public method converts Firebase errors into a [Failure].
 class AuthService {
-  AuthService({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-    GoogleSignIn? googleSignIn,
-  }) : _auth = auth ?? FirebaseAuth.instance,
-       _db = firestore ?? FirebaseFirestore.instance,
-       _google = googleSignIn ?? GoogleSignIn.instance;
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _db = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
-  final GoogleSignIn _google;
-
-  Future<void>? _googleInit;
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _db.collection(FirestorePaths.users);
@@ -40,6 +33,8 @@ class AuthService {
       .map((doc) => doc.exists ? AppUser.fromFirestore(doc) : null);
 
   /// CREATE: auth account + users/{uid} profile + verification email.
+  /// The user is signed out at the end, so they land on the login screen
+  /// and sign in after verifying their email.
   Future<void> registerWithEmail({
     required String name,
     required String email,
@@ -60,6 +55,7 @@ class AuthService {
     );
     await _users.doc(user.uid).set(profile.toMap());
     await user.sendEmailVerification();
+    await _auth.signOut();
   });
 
   Future<void> signInWithEmail({
@@ -69,18 +65,19 @@ class AuthService {
     () => _auth.signInWithEmailAndPassword(email: email, password: password),
   );
 
-  /// Returns false when the user closes the Google account picker.
+  /// Opens Google's account chooser (with "Use another account").
+  /// Returns false when the user closes it without choosing.
   /// A first-time Google user gets a profile with an empty schoolId; the app
   /// then asks them to pick a school.
   Future<bool> signInWithGoogle() => guardFirebase(() async {
-    _googleInit ??= _google.initialize();
-    await _googleInit;
+    final provider = GoogleAuthProvider()
+      ..addScope('email')
+      ..setCustomParameters({'prompt': 'select_account'});
+
     try {
-      final account = await _google.authenticate();
-      final credential = GoogleAuthProvider.credential(
-        idToken: account.authentication.idToken,
-      );
-      final result = await _auth.signInWithCredential(credential);
+      final result = kIsWeb
+          ? await _auth.signInWithPopup(provider)
+          : await _auth.signInWithProvider(provider);
       final user = result.user!;
 
       final doc = _users.doc(user.uid);
@@ -94,8 +91,14 @@ class AuthService {
         await doc.set(profile.toMap());
       }
       return true;
-    } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) return false;
+    } on FirebaseAuthException catch (e) {
+      const cancelled = {
+        'web-context-canceled',
+        'popup-closed-by-user',
+        'cancelled-popup-request',
+        'canceled',
+      };
+      if (cancelled.contains(e.code)) return false;
       rethrow;
     }
   });
@@ -119,21 +122,7 @@ class AuthService {
     return guardFirebase(() => _users.doc(uid).update(changes));
   }
 
-  Future<void> signOut() => guardFirebase(() async {
-    // Check before signing out: currentUser is null afterwards.
-    final usedGoogle =
-        _auth.currentUser?.providerData.any(
-          (p) => p.providerId == 'google.com',
-        ) ??
-        false;
-    // Firebase first so a Google problem can't keep the user signed in.
-    await _auth.signOut();
-    if (!usedGoogle) return;
-    // Best effort: a Google error must not undo the Firebase sign-out.
-    try {
-      _googleInit ??= _google.initialize();
-      await _googleInit;
-      await _google.signOut();
-    } catch (_) {}
-  });
+  /// Signs out of Firebase. Google sign-in now goes through Firebase itself,
+  /// so there is no separate Google session to clear.
+  Future<void> signOut() => guardFirebase(() => _auth.signOut());
 }

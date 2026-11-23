@@ -28,7 +28,6 @@ import 'widgets/app_shell.dart';
 import 'widgets/placeholder_screen.dart';
 
 /// All route paths in one place (lib/app_routes.dart). Add yours via PR.
-
 class AppRoutes {
   static const splash = '/splash'; // Member 1
   static const login = '/login';
@@ -42,6 +41,9 @@ class AppRoutes {
   static const students = '/students';
   static const studentProfile = '/students/:id';
   static const assess = '/assess';
+  // Member 3's older name for the same route; kept so nothing breaks.
+  // ignore: constant_identifier_names
+  static const start_assessment = assess;
   static const assessReading = '/assess/reading';
   static const assessMath = '/assess/math';
   static const prepareReading = '/assess/reading/prepare';
@@ -157,6 +159,8 @@ String? authRedirect(AuthProvider auth, String location) {
   if (!auth.initialized) {
     return location == AppRoutes.splash ? null : AppRoutes.splash;
   }
+  // While registering, stay on the form; the screen sends the user to login.
+  if (auth.isRegistering) return null;
   if (!auth.isSignedIn) {
     return _publicRoutes.contains(location) ? null : AppRoutes.login;
   }
